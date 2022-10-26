@@ -1,0 +1,15 @@
+{
+	"name": "node",
+	"image": "node",
+	"forwardPorts": [
+		50051
+	],
+	"postCreateCommand": "npm install",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode.vscode-typescript-next"
+			]
+		}
+	}
+}
