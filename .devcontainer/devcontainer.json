@@ -1,9 +1,9 @@
 {
-	"name": "node",
-	"image": "node",
-	"forwardPorts": [
-		50051
-	],
+	"name": "snoozehub-backend",
+	"dockerComposeFile": "docker-compose.yaml",
+	"service": "grpc-server",
+	"workspaceFolder": "/workspace",
+	"overrideCommand": true,
 	"postCreateCommand": "npm install",
 	"customizations": {
 		"vscode": {
