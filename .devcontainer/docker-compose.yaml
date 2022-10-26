@@ -25,8 +25,6 @@ services:
       - ME_CONFIG_MONGODB_PORT=27017
     ports:
       - 8081:8081
-    links:
-      - mongodb:mongodb
     restart: always
     depends_on:
       - mongodb
