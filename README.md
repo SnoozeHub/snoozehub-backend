@@ -5,7 +5,7 @@ We are using a proxy server for the grpc server from https://github.com/improbab
 - grpc-web-proxy: proxy for the grpc-server (port: 9090)
 - mongodb: database (port: 27017, user: root, pass: root)
 - mongo-express: web interface to manage mongodb (port: 8081)
-# Getting started for dev
+# How to use for dev
 1. Open The folder in vscode
 2. Using remote container extension, select reopen in container
 3. Develop or go to [localhost:8081](localhost:8081) to manage the database
