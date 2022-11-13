@@ -637,10 +637,11 @@ proto.GetBedsRequest.prototype.toObject = function(opt_includeInstance) {
  */
 proto.GetBedsRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
-    date: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    place: jspb.Message.getFieldWithDefault(msg, 2, ""),
+    daterangelow: jspb.Message.getFieldWithDefault(msg, 1, 0),
+    daterangehigh: jspb.Message.getFieldWithDefault(msg, 2, 0),
+    place: jspb.Message.getFieldWithDefault(msg, 3, ""),
     featuresmondadory: (f = msg.getFeaturesmondadory()) && common$messages_pb.Features.toObject(includeInstance, f),
-    fromindex: jspb.Message.getFieldWithDefault(msg, 4, 0)
+    fromindex: jspb.Message.getFieldWithDefault(msg, 5, 0)
   };
 
   if (includeInstance) {
@@ -679,18 +680,22 @@ proto.GetBedsRequest.deserializeBinaryFromReader = function(msg, reader) {
     switch (field) {
     case 1:
       var value = /** @type {number} */ (reader.readUint32());
-      msg.setDate(value);
+      msg.setDaterangelow(value);
       break;
     case 2:
+      var value = /** @type {number} */ (reader.readUint32());
+      msg.setDaterangehigh(value);
+      break;
+    case 3:
       var value = /** @type {string} */ (reader.readString());
       msg.setPlace(value);
       break;
-    case 3:
+    case 4:
       var value = new common$messages_pb.Features;
       reader.readMessage(value,common$messages_pb.Features.deserializeBinaryFromReader);
       msg.setFeaturesmondadory(value);
       break;
-    case 4:
+    case 5:
       var value = /** @type {number} */ (reader.readUint32());
       msg.setFromindex(value);
       break;
@@ -723,24 +728,31 @@ proto.GetBedsRequest.prototype.serializeBinary = function() {
  */
 proto.GetBedsRequest.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getDate();
+  f = message.getDaterangelow();
   if (f !== 0) {
     writer.writeUint32(
       1,
       f
     );
   }
+  f = message.getDaterangehigh();
+  if (f !== 0) {
+    writer.writeUint32(
+      2,
+      f
+    );
+  }
   f = message.getPlace();
   if (f.length > 0) {
     writer.writeString(
-      2,
+      3,
       f
     );
   }
   f = message.getFeaturesmondadory();
   if (f != null) {
     writer.writeMessage(
-      3,
+      4,
       f,
       common$messages_pb.Features.serializeBinaryToWriter
     );
@@ -748,7 +760,7 @@ proto.GetBedsRequest.serializeBinaryToWriter = function(message, writer) {
   f = message.getFromindex();
   if (f !== 0) {
     writer.writeUint32(
-      4,
+      5,
       f
     );
   }
@@ -756,10 +768,10 @@ proto.GetBedsRequest.serializeBinaryToWriter = function(message, writer) {
 
 
 /**
- * optional uint32 date = 1;
+ * optional uint32 dateRangeLow = 1;
  * @return {number}
  */
-proto.GetBedsRequest.prototype.getDate = function() {
+proto.GetBedsRequest.prototype.getDaterangelow = function() {
   return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 1, 0));
 };
 
@@ -768,17 +780,35 @@ proto.GetBedsRequest.prototype.getDate = function() {
  * @param {number} value
  * @return {!proto.GetBedsRequest} returns this
  */
-proto.GetBedsRequest.prototype.setDate = function(value) {
+proto.GetBedsRequest.prototype.setDaterangelow = function(value) {
   return jspb.Message.setProto3IntField(this, 1, value);
 };
 
 
 /**
- * optional string place = 2;
+ * optional uint32 dateRangeHigh = 2;
+ * @return {number}
+ */
+proto.GetBedsRequest.prototype.getDaterangehigh = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 2, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.GetBedsRequest} returns this
+ */
+proto.GetBedsRequest.prototype.setDaterangehigh = function(value) {
+  return jspb.Message.setProto3IntField(this, 2, value);
+};
+
+
+/**
+ * optional string place = 3;
  * @return {string}
  */
 proto.GetBedsRequest.prototype.getPlace = function() {
-  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
 };
 
 
@@ -787,17 +817,17 @@ proto.GetBedsRequest.prototype.getPlace = function() {
  * @return {!proto.GetBedsRequest} returns this
  */
 proto.GetBedsRequest.prototype.setPlace = function(value) {
-  return jspb.Message.setProto3StringField(this, 2, value);
+  return jspb.Message.setProto3StringField(this, 3, value);
 };
 
 
 /**
- * optional Features featuresMondadory = 3;
+ * optional Features featuresMondadory = 4;
  * @return {?proto.Features}
  */
 proto.GetBedsRequest.prototype.getFeaturesmondadory = function() {
   return /** @type{?proto.Features} */ (
-    jspb.Message.getWrapperField(this, common$messages_pb.Features, 3));
+    jspb.Message.getWrapperField(this, common$messages_pb.Features, 4));
 };
 
 
@@ -806,7 +836,7 @@ proto.GetBedsRequest.prototype.getFeaturesmondadory = function() {
  * @return {!proto.GetBedsRequest} returns this
 */
 proto.GetBedsRequest.prototype.setFeaturesmondadory = function(value) {
-  return jspb.Message.setWrapperField(this, 3, value);
+  return jspb.Message.setWrapperField(this, 4, value);
 };
 
 
@@ -824,16 +854,16 @@ proto.GetBedsRequest.prototype.clearFeaturesmondadory = function() {
  * @return {boolean}
  */
 proto.GetBedsRequest.prototype.hasFeaturesmondadory = function() {
-  return jspb.Message.getField(this, 3) != null;
+  return jspb.Message.getField(this, 4) != null;
 };
 
 
 /**
- * optional uint32 fromIndex = 4;
+ * optional uint32 fromIndex = 5;
  * @return {number}
  */
 proto.GetBedsRequest.prototype.getFromindex = function() {
-  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 4, 0));
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 5, 0));
 };
 
 
@@ -842,7 +872,7 @@ proto.GetBedsRequest.prototype.getFromindex = function() {
  * @return {!proto.GetBedsRequest} returns this
  */
 proto.GetBedsRequest.prototype.setFromindex = function(value) {
-  return jspb.Message.setProto3IntField(this, 4, value);
+  return jspb.Message.setProto3IntField(this, 5, value);
 };
 
 

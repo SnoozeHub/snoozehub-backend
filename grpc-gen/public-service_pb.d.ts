@@ -74,8 +74,10 @@ export namespace AuthResponse {
 }
 
 export class GetBedsRequest extends jspb.Message { 
-    getDate(): number;
-    setDate(value: number): GetBedsRequest;
+    getDaterangelow(): number;
+    setDaterangelow(value: number): GetBedsRequest;
+    getDaterangehigh(): number;
+    setDaterangehigh(value: number): GetBedsRequest;
     getPlace(): string;
     setPlace(value: string): GetBedsRequest;
 
@@ -98,7 +100,8 @@ export class GetBedsRequest extends jspb.Message {
 
 export namespace GetBedsRequest {
     export type AsObject = {
-        date: number,
+        daterangelow: number,
+        daterangehigh: number,
         place: string,
         featuresmondadory?: common_messages_pb.Features.AsObject,
         fromindex: number,
