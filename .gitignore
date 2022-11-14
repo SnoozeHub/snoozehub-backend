@@ -147,3 +147,5 @@ dist
 
 
 package-lock.json
+.pnpm-store
+node-jiti
