@@ -1,0 +1,15 @@
+{
+	"name": "snoozehub-backend",
+	"dockerComposeFile": "docker-compose.yaml",
+	"service": "grpc-server",
+	"workspaceFolder": "/workspace",
+	"overrideCommand": true,
+	"postCreateCommand": "sleep infinity",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"golang.Go"
+			]
+		}
+	},
+}
