@@ -4,7 +4,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/SnoozeHub/snoozehub-backend/grpc_gen" // Update
+	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
 	"google.golang.org/grpc"
 )
 
