@@ -2,17 +2,28 @@ package main
 
 import (
 	"context"
+	"time"
 
 	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
+	"github.com/patrickmn/go-cache"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type authOnlyService struct {
 	grpc_gen.UnimplementedAuthOnlyServiceServer
+	authTokens *cache.Cache
+	db *mongo.Database
 }
 
-func newAuthOnlyService() *authOnlyService {
-	service := authOnlyService{}
+func newAuthOnlyService(db *mongo.Database) *authOnlyService {
+	service := authOnlyService{
+		authTokens: cache.New(5*time.Minute, 5*time.Minute),
+		db: db,
+	}
 	return &service
+}
+func (s *authOnlyService) GetAuthTokens() *cache.Cache {
+	return s.authTokens
 }
 
 func (s *authOnlyService) SignUp(context.Context, *grpc_gen.AccountInfo) (*grpc_gen.Empty, error) {
