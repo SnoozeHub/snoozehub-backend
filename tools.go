@@ -79,3 +79,29 @@ func allDistinct[T comparable](s []T) bool {
 	}
 	return true
 }
+
+func bedToGrpcBed(b bed) *grpc_gen.Bed {
+	dateAvailables := make([]*grpc_gen.Date, len(b.DateAvailables))
+	for _, v := range b.DateAvailables {
+		dateAvailables = append(dateAvailables, deflatterizeDate(v))
+	}
+	var averageEvaluation *uint32 = nil
+	if b.AverageEvaluation != nil {
+		tmp2 := uint32(*b.AverageEvaluation)
+		averageEvaluation = &tmp2
+	}
+	return &grpc_gen.Bed{
+		Id: &grpc_gen.BedId{BedId: b.Id},
+		BedMutableInfo: &grpc_gen.BedMutableInfo{
+			Address: b.Address,
+			Coordinates: &grpc_gen.Coordinates{Latitude: b.Latitude, Longitude: b.Longitude},
+			Images: b.Images,
+			Description: b.Description,
+			Features: intsTofeatures(b.Features),
+			MinimumDaysNotice: uint32(b.MinimumDaysNotice),
+		},
+		DateAvailables: dateAvailables,
+		ReviewCount: uint32(len(b.Reviews)),
+		AverageEvaluation: averageEvaluation,
+	}
+}

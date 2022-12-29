@@ -34,6 +34,7 @@ type AuthOnlyServiceClient interface {
 	UpdateAccountInfo(ctx context.Context, in *AccountInfo, opts ...grpc.CallOption) (*Empty, error)
 	// FOR EVERY FOLLOWING RPC IS ASSUMED THAT THE CALLER HAS A VERIFIED ACCOUNT
 	// GUEST RPCs
+	// If guest can pay, he must do it within 1 minute
 	// "Human proof token" are then sent through mail to both guest, and host
 	Book(ctx context.Context, in *Booking, opts ...grpc.CallOption) (*BookResponse, error)
 	GetMyBookings(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*GetBookingsResponse, error)
@@ -225,6 +226,7 @@ type AuthOnlyServiceServer interface {
 	UpdateAccountInfo(context.Context, *AccountInfo) (*Empty, error)
 	// FOR EVERY FOLLOWING RPC IS ASSUMED THAT THE CALLER HAS A VERIFIED ACCOUNT
 	// GUEST RPCs
+	// If guest can pay, he must do it within 1 minute
 	// "Human proof token" are then sent through mail to both guest, and host
 	Book(context.Context, *Booking) (*BookResponse, error)
 	GetMyBookings(context.Context, *Empty) (*GetBookingsResponse, error)

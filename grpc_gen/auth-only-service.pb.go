@@ -167,7 +167,7 @@ type GetBookingsResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Book []*Booking `protobuf:"bytes,1,rep,name=book,proto3" json:"book,omitempty"`
+	Book []*Booking `protobuf:"bytes,1,rep,name=book,proto3" json:"book,omitempty"` // #TODO ritorna i posti letto, e per ognuno una lista di date che si hanno prenotato
 }
 
 func (x *GetBookingsResponse) Reset() {

@@ -17,7 +17,7 @@ type authOnlyService struct {
 
 func newAuthOnlyService(db *mongo.Database) *authOnlyService {
 	service := authOnlyService{
-		authTokens: cache.New(5*time.Minute, 5*time.Minute),
+		authTokens: cache.New(24*time.Hour, 24*time.Hour),
 		db: db,
 	}
 	return &service

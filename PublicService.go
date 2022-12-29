@@ -22,7 +22,7 @@ type publicService struct {
 
 func newPublicService(db *mongo.Database, authTokens *cache.Cache) *publicService {
 	service := publicService{
-		nonces: cache.New(20*time.Second, 20*time.Second),
+		nonces: cache.New(1*time.Minute, 1*time.Second),
 		authTokens: authTokens,
 		db: db,
 	}
@@ -113,34 +113,31 @@ func (s *publicService) GetBeds(_ context.Context, req *grpc_gen.GetBedsRequest)
 	})
 	
 	// Get first N result from req.FromIndex
-	beds := make([]*grpc_gen.BedList_Bed, 0)
+	beds := make([]*grpc_gen.Bed, 0)
 	for i := int(req.FromIndex); i < len(resSorted); i++ {
-		tmp := resSorted[i]
-		dateAvailables := make([]*grpc_gen.Date, len(tmp.DateAvailables))
-		for _, v := range tmp.DateAvailables {
-			dateAvailables = append(dateAvailables, deflatterizeDate(v))
-		}
-		var averageEvaluation *uint32 = nil
-		if tmp.AverageEvaluation != nil {
-			tmp2 := uint32(*tmp.AverageEvaluation)
-			averageEvaluation = &tmp2
-		}
-		beds = append(beds, &grpc_gen.BedList_Bed{
-			Id: &grpc_gen.BedId{BedId: tmp.Id},
-			BedMutableInfo: &grpc_gen.BedMutableInfo{
-				Address: tmp.Address,
-				Coordinates: &grpc_gen.Coordinates{Latitude: tmp.Latitude, Longitude: tmp.Longitude},
-				Images: tmp.Images,
-				Description: tmp.Description,
-				Features: intsTofeatures(tmp.Features),
-				MinimumDaysNotice: uint32(tmp.MinimumDaysNotice),
-			},
-			DateAvailables: dateAvailables,
-			ReviewCount: uint32(len(tmp.Reviews)),
-			AverageEvaluation: averageEvaluation,
-		})
+		beds = append(beds, bedToGrpcBed(resSorted[i]))
 	}
 	return &grpc_gen.BedList{Beds: beds}, nil
+}
+func (s *publicService) GetBed(_ context.Context, req *grpc_gen.BedId) (*grpc_gen.GetBedResponse, error) {
+	res, err := s.db.Collection("beds").Find(
+		context.TODO(),
+		bson.D{{Key: "id", Value: req.BedId}},
+	)
+	if err != nil {
+		return nil, err
+	}
+	if res.RemainingBatchLength() != 1 {
+		return &grpc_gen.GetBedResponse{Bed: nil}, nil
+	}
+	res.Next(context.TODO())
+	var currentBed bed
+	err = bson.Unmarshal(res.Current, currentBed)
+	if err != nil {
+		return nil, err
+	}
+
+	return &grpc_gen.GetBedResponse{Bed: bedToGrpcBed(currentBed)}, nil
 }
 func (s *publicService) GetReview(_ context.Context, req *grpc_gen.GetReviewsRequest) (*grpc_gen.GetReviewsResponse, error) {
 	res, err := s.db.Collection("beds").Find(

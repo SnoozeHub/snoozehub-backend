@@ -1,12 +1,17 @@
 package main
 
 type account struct {
-	PublicKey string `bson:"publicKey"`
+	PublicKey string
+	Name string
+	Mail string
+	TelegramUsername string
+	ProfilePic *[]byte
+	VerificationCode *string // If doesn't exist, the account is verified
 }
 
 type review struct {
-	Evaluation int32  `bson:"evaluation"`
-	Comment    string `bson:"comment"`
+	Evaluation int32
+	Comment    string
 }
 
 type bed struct {
