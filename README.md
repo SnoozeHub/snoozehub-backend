@@ -3,7 +3,7 @@ We are using a proxy server for the grpc server from https://github.com/improbab
 ## Services:
 - grpc-server: Grpc server for backend, this is the main service for development
 - grpc-web-proxy: proxy for the grpc-server (port: 9090)
-- mongodb: database (port: 27017, user: root, pass: root)
+- mongodb: database (port: 27017)
 - mongo-express: web interface to manage mongodb (port: 8081)
 # How to use for dev
 1. Open The folder in vscode
