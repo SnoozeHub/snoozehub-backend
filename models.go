@@ -1,7 +1,7 @@
 package main
 
 type account struct {
-	PublicKey string`bson:"publicKey"`
+	PublicKey string `bson:"publicKey"`
 }
 
 type review struct {
@@ -10,13 +10,15 @@ type review struct {
 }
 
 type bed struct {
-	Id                string   `bson:"id"`
-	Place             string   `bson:"place"`
-	Images            [][]byte `bson:"images"`
-	Description       string   `bson:"description"`
-	Features          []int32  `bson:"features"`
-	MinimumDaysNotice int32    `bson:"minimumDaysNotice"`
-	DateAvailables    []int32  `bson:"dateAvailables"`
-	AverageEvaluation int32    `bson:"averageEvaluation"`
-	Reviews           []review `bson:"reviews"`
+	Id                string  
+	Address           string  
+	Latitude          float64 
+	Longitude         float64
+	Images            [][]byte
+	Description       string  
+	Features          []int32 
+	MinimumDaysNotice int32   
+	DateAvailables    []int32 
+	AverageEvaluation *int32  
+	Reviews           []review
 }

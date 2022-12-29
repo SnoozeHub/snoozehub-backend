@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"errors"
+	"sort"
 	"time"
-
+	geo "github.com/kellydunn/golang-geo"
 	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/patrickmn/go-cache"
@@ -48,10 +49,13 @@ func (s *publicService) Auth(_ context.Context, req *grpc_gen.AuthRequest) (*grp
 	token := GenRandomString(20)
 	s.authTokens.Add(token, publicKey, cache.DefaultExpiration)
 
-	res, _ := s.db.Collection("accounts").Find(
+	res, err := s.db.Collection("accounts").Find(
 		context.TODO(),
-		bson.D{{"publicKey", publicKey}},
+		bson.D{{Key: "publicKey", Value: publicKey}},
 	)
+	if err != nil {
+		return nil, err
+	}
 	accountExist := res.Next(context.TODO())
 	return &grpc_gen.AuthResponse{
 		AuthToken: token,
@@ -60,25 +64,22 @@ func (s *publicService) Auth(_ context.Context, req *grpc_gen.AuthRequest) (*grp
 }
 func (s *publicService) GetBeds(_ context.Context, req *grpc_gen.GetBedsRequest) (*grpc_gen.BedList, error) {
 	// Prepare the mondadory features
-	if !allDistinct(req.FeaturesMondadory) {
-		return nil, errors.New("not distinct featuresMondatory")
+	if !allDistinct(req.FeaturesMandatory) {
+		return nil, errors.New("not distinct featuresMandatory")
 	}
-	featuresRequested := featuresToInts(req.FeaturesMondadory)
+	featuresRequested := featuresToInts(req.FeaturesMandatory)
 
-	// Filter the place
-	if len(req.Place) < 1 || len(req.Place) > 100 {
-		return nil, errors.New("invalid place")
+	// Check if coordinates are valid
+	if req.Coordinates.Latitude < -90 || req.Coordinates.Latitude > 90 || req.Coordinates.Longitude < -180 || req.Coordinates.Latitude > 180 {
+		return nil, errors.New("invalid coordinates")
 	}
-	filter := bson.D{
-		{Key: "place", Value: req.Place},
-	}
-
+	
 	// Filter the mondadory features
 	tmp := bson.A{}
 	for _, v := range featuresRequested {
 		tmp = append(tmp, v)
 	}
-	filter = append(filter, bson.E{Key: "features", Value: bson.M{"$all": tmp}})
+	filter := bson.D{bson.E{Key: "features", Value: bson.M{"$all": tmp}}}
 	
 	// Filter the date range
 	if !isDateValidAndFromTomorrow(req.DateRangeLow) || !isDateValidAndFromTomorrow(req.DateRangeHigh) {
@@ -91,37 +92,77 @@ func (s *publicService) GetBeds(_ context.Context, req *grpc_gen.GetBedsRequest)
 	}
 	filter = append(filter, bson.E{Key: "dateAvailables", Value: bson.M{"$elemMatch": bson.A{bson.M{"$gte": dateRangeLowFlatterized}, bson.M{"$lte": dateRangeHighFlatterized}}}})
 	
-	res, _ := s.db.Collection("beds").Find(
+	// get beds
+	res, err := s.db.Collection("beds").Find(
 		context.TODO(),
 		filter,
 	)
-	
-	beds := make([]*grpc_gen.BedList_Bed, 0)
-	i := req.FromIndex
-	for res.Next(context.TODO()) && i > 0{
-		i--
+	if err != nil {
+		return nil, err
 	}
-	i = 15
-	for res.Next(context.TODO()) && i > 0{
-		var tmp bed
-		err := bson.Unmarshal(res.Current, tmp)
-		if err != nil {
-			return nil, err
+
+	// sort beds based on coordinates
+	resSorted := make([]bed, res.RemainingBatchLength())
+	err = res.All(context.TODO(), resSorted)
+	if err != nil {
+		return nil, err
+	}
+	requestedLocation := geo.NewPoint(req.Coordinates.Latitude, req.Coordinates.Longitude)
+	sort.Slice(resSorted, func(i, j int) bool {
+		return requestedLocation.GreatCircleDistance(geo.NewPoint(resSorted[i].Latitude, resSorted[i].Longitude)) < requestedLocation.GreatCircleDistance(geo.NewPoint(resSorted[j].Latitude, resSorted[j].Longitude))
+	})
+	
+	// Get first N result from req.FromIndex
+	beds := make([]*grpc_gen.BedList_Bed, 0)
+	for i := int(req.FromIndex); i < len(resSorted); i++ {
+		tmp := resSorted[i]
+		dateAvailables := make([]*grpc_gen.Date, len(tmp.DateAvailables))
+		for _, v := range tmp.DateAvailables {
+			dateAvailables = append(dateAvailables, deflatterizeDate(v))
+		}
+		var averageEvaluation *uint32 = nil
+		if tmp.AverageEvaluation != nil {
+			tmp2 := uint32(*tmp.AverageEvaluation)
+			averageEvaluation = &tmp2
 		}
 		beds = append(beds, &grpc_gen.BedList_Bed{
 			Id: &grpc_gen.BedId{BedId: tmp.Id},
 			BedMutableInfo: &grpc_gen.BedMutableInfo{
-				Place: tmp.Place,
+				Address: tmp.Address,
+				Coordinates: &grpc_gen.Coordinates{Latitude: tmp.Latitude, Longitude: tmp.Longitude},
 				Images: tmp.Images,
 				Description: tmp.Description,
 				Features: intsTofeatures(tmp.Features),
+				MinimumDaysNotice: uint32(tmp.MinimumDaysNotice),
 			},
-			DateAvailables: tmp.DateAvailables,
+			DateAvailables: dateAvailables,
+			ReviewCount: uint32(len(tmp.Reviews)),
+			AverageEvaluation: averageEvaluation,
 		})
-		i--
 	}
-	return nil, nil
+	return &grpc_gen.BedList{Beds: beds}, nil
 }
-func (s *publicService) GetReview(context.Context, *grpc_gen.GetReviewsRequest) (*grpc_gen.GetReviewsResponse, error) {
-	return nil, nil
+func (s *publicService) GetReview(_ context.Context, req *grpc_gen.GetReviewsRequest) (*grpc_gen.GetReviewsResponse, error) {
+	res, err := s.db.Collection("beds").Find(
+		context.TODO(),
+		bson.D{{Key: "id", Value: req.BedId.BedId}},
+	)
+	if err != nil {
+		return nil, err
+	}
+	if res.RemainingBatchLength() != 1 {
+		return nil, errors.New("invalid id")
+	}
+	res.Next(context.TODO())
+	var currentBed bed
+	err = bson.Unmarshal(res.Current, currentBed)
+	if err != nil {
+		return nil, err
+	}
+
+	reviews := make([]*grpc_gen.Review, 0)
+	for i := int(req.FromIndex); i < len(currentBed.Reviews); i++ {
+		reviews = append(reviews, &grpc_gen.Review{Evaluation: uint32(currentBed.Reviews[i].Evaluation), Comment: currentBed.Reviews[i].Comment})
+	}
+	return &grpc_gen.GetReviewsResponse{Reviews: reviews}, nil
 }

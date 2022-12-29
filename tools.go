@@ -2,7 +2,6 @@ package main
 
 import (
 	"math/rand"
-	"strconv"
 	"time"
 
 	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
@@ -21,8 +20,6 @@ var seededRand *rand.Rand = rand.New(
 	rand.NewSource(time.Now().UnixNano()))
 
 func GenRandomString(length int) string {
-	var seededRand *rand.Rand = rand.New(
-		rand.NewSource(time.Now().UnixNano()))
 	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	b := make([]byte, length)
 	for i := range b {
@@ -43,13 +40,13 @@ func isDateValidAndFromTomorrow(d *grpc_gen.Date) bool {
 }
 
 // Assumed that isDateValidAndFromTomorrow(d) is true 
-func flatterizeDate(d *grpc_gen.Date) string {
-	return strconv.Itoa(int(d.Year*10000+d.Month*100+d.Day)) 
+func flatterizeDate(d *grpc_gen.Date) int32 {
+	return int32(d.Year*10000+d.Month*100+d.Day)
 }
-func deflatterizeDate(s string ) *grpc_gen.Date {
-	d , _ := strconv.Atoi(s[6:])
-	m , _ := strconv.Atoi(s[4:6])
-	y , _ := strconv.Atoi(s[:4])
+func deflatterizeDate(s int32) *grpc_gen.Date {
+	d := s%100
+	m := (s%10000)/100
+	y := s/10000
 	return &grpc_gen.Date{
 		Day: uint32(d),
 		Month: uint32(m),
