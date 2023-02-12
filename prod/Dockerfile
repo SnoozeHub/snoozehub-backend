@@ -5,5 +5,5 @@ ADD go.sum .
 ADD *.go .
 ADD grpc_gen grpc_gen
 RUN go mod download
-RUN go build
+RUN go build -tags prod
 ENTRYPOINT ./snoozehub-backend

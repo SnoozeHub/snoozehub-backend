@@ -6,6 +6,14 @@ We are using a proxy server for the grpc server from https://github.com/improbab
 - mongodb: database (port: 27017)
 - mongo-express: web interface to manage mongodb (port: 8081)
 # How to use for dev
-1. Open The folder in vscode
-2. Using remote container extension, select reopen in container
-3. Develop or go to [localhost:8081](localhost:8081) to manage the database
+1. Place 'mailgun-sending-key.key' file in secrets folder
+2. Open The folder in vscode
+3. Using remote container extension, select reopen in container
+4. Develop or go to [localhost:8081](localhost:8081) to manage the database
+# How to use for production
+TODO
+
+#TODO
+SetProfilePic doesn't check if it is avif
+removeAccount remove only the account itself
+non optional values are assumed that are optional, it can crash

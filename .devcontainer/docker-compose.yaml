@@ -1,14 +1,18 @@
-version: "3.9"
+version: '3.9'
 services:
   grpc-server:
     image: golang
     volumes:
       - ..:/workspace
+    environment:
+      DEBUG:
 
   grpc-web-proxy:
     build: .
     ports:
       - 9090:9090
+    depends_on:
+      - grpc-server
 
   mongodb:
     image : mongo
@@ -16,10 +20,10 @@ services:
   mongo-express:
     image: mongo-express
     environment:
-      - ME_CONFIG_MONGODB_ADMINUSERNAME=root
-      - ME_CONFIG_MONGODB_ADMINPASSWORD=root
-      - ME_CONFIG_MONGODB_SERVER=mongodb
-      - ME_CONFIG_MONGODB_PORT=27017
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: root
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_PORT: 27017
     ports:
       - 8081:8081
     restart: always
