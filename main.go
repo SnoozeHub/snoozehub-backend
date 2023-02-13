@@ -11,11 +11,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
 )
+
 type Trainer struct {
-    Name string
-    Age  int
-    City string
+	Name string
+	Age  int
+	City string
 }
+
 func setupDb(db *mongo.Database) error {
 	_, err := db.Collection("accounts").Indexes().CreateOne(
 		context.TODO(),
@@ -30,7 +32,7 @@ func setupDb(db *mongo.Database) error {
 	_, err = db.Collection("beds").Indexes().CreateOne(
 		context.TODO(),
 		mongo.IndexModel{
-			Keys:    bson.D{{Key: "place", Value: 1}},
+			Keys: bson.D{{Key: "place", Value: 1}},
 		},
 	)
 	if err != nil {
@@ -53,7 +55,7 @@ func runGrpc() error {
 	if err != nil {
 		return err
 	}
-	
+
 	db := client.Database("main")
 
 	err = setupDb(db)
@@ -63,7 +65,7 @@ func runGrpc() error {
 
 	s := grpc.NewServer()
 	tmp := newAuthOnlyService(db)
-	grpc_gen.RegisterPublicServiceServer(s, newPublicService(db, tmp.GetAuthTokens()))
+	grpc_gen.RegisterPublicServiceServer(s, newPublicService(db, tmp.GetAuthTokens(), tmp.GetMutex()))
 	grpc_gen.RegisterAuthOnlyServiceServer(s, tmp)
 	return s.Serve(lis)
 }

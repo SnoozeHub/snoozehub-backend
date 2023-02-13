@@ -17,3 +17,4 @@ TODO
 SetProfilePic doesn't check if it is avif
 removeAccount remove only the account itself
 non optional values are assumed that are optional, it can crash
+add check if booking is valid with MinimumDaysNotice

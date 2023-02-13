@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"sort"
+	"sync"
 	"time"
-	geo "github.com/kellydunn/golang-geo"
+
 	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
 	"github.com/ethereum/go-ethereum/crypto"
+	geo "github.com/kellydunn/golang-geo"
 	"github.com/patrickmn/go-cache"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -15,26 +17,34 @@ import (
 
 type publicService struct {
 	grpc_gen.UnimplementedPublicServiceServer
-	nonces *cache.Cache
+	nonces     *cache.Cache
 	authTokens *cache.Cache
-	db *mongo.Database
+	db         *mongo.Database
+	mu         *sync.Mutex
 }
 
-func newPublicService(db *mongo.Database, authTokens *cache.Cache) *publicService {
+func newPublicService(db *mongo.Database, authTokens *cache.Cache, mu *sync.Mutex) *publicService {
 	service := publicService{
-		nonces: cache.New(1*time.Minute, 1*time.Second),
+		nonces:     cache.New(1*time.Minute, 1*time.Second),
 		authTokens: authTokens,
-		db: db,
+		db:         db,
+		mu:         mu,
 	}
 	return &service
 }
 
 func (s *publicService) GetNonce(context.Context, *grpc_gen.Empty) (*grpc_gen.GetNonceResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	nonce := GenRandomString(20)
 	s.nonces.Add(nonce, struct{}{}, cache.DefaultExpiration)
 	return &grpc_gen.GetNonceResponse{Nonce: nonce}, nil
 }
 func (s *publicService) Auth(_ context.Context, req *grpc_gen.AuthRequest) (*grpc_gen.AuthResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	_, found := s.nonces.Get(req.Nonce)
 	if !found {
 		return nil, errors.New("expired or non existing nonce")
@@ -58,11 +68,14 @@ func (s *publicService) Auth(_ context.Context, req *grpc_gen.AuthRequest) (*grp
 	}
 	accountExist := res.Next(context.TODO())
 	return &grpc_gen.AuthResponse{
-		AuthToken: token,
+		AuthToken:    token,
 		AccountExist: accountExist,
 	}, nil
 }
 func (s *publicService) GetBeds(_ context.Context, req *grpc_gen.GetBedsRequest) (*grpc_gen.BedList, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	// Prepare the mondadory features
 	if !allDistinct(req.FeaturesMandatory) {
 		return nil, errors.New("not distinct featuresMandatory")
@@ -73,14 +86,14 @@ func (s *publicService) GetBeds(_ context.Context, req *grpc_gen.GetBedsRequest)
 	if req.Coordinates.Latitude < -90 || req.Coordinates.Latitude > 90 || req.Coordinates.Longitude < -180 || req.Coordinates.Latitude > 180 {
 		return nil, errors.New("invalid coordinates")
 	}
-	
+
 	// Filter the mondadory features
 	tmp := bson.A{}
 	for _, v := range featuresRequested {
 		tmp = append(tmp, v)
 	}
 	filter := bson.D{bson.E{Key: "features", Value: bson.M{"$all": tmp}}}
-	
+
 	// Filter the date range
 	if !isDateValidAndFromTomorrow(req.DateRangeLow) || !isDateValidAndFromTomorrow(req.DateRangeHigh) {
 		return nil, errors.New("invalid dateRangeLow or dateRangeHigh")
@@ -91,7 +104,7 @@ func (s *publicService) GetBeds(_ context.Context, req *grpc_gen.GetBedsRequest)
 		return nil, errors.New("dateRangeHigh is before dateRangeLow")
 	}
 	filter = append(filter, bson.E{Key: "dateAvailables", Value: bson.M{"$elemMatch": bson.A{bson.M{"$gte": dateRangeLowFlatterized}, bson.M{"$lte": dateRangeHighFlatterized}}}})
-	
+
 	// get beds
 	res, err := s.db.Collection("beds").Find(
 		context.TODO(),
@@ -111,15 +124,18 @@ func (s *publicService) GetBeds(_ context.Context, req *grpc_gen.GetBedsRequest)
 	sort.Slice(resSorted, func(i, j int) bool {
 		return requestedLocation.GreatCircleDistance(geo.NewPoint(resSorted[i].Latitude, resSorted[i].Longitude)) < requestedLocation.GreatCircleDistance(geo.NewPoint(resSorted[j].Latitude, resSorted[j].Longitude))
 	})
-	
+
 	// Get first N result from req.FromIndex
 	beds := make([]*grpc_gen.Bed, 0)
 	for i := int(req.FromIndex); i < len(resSorted); i++ {
-		beds = append(beds, bedToGrpcBed(resSorted[i]))
+		beds = append(beds, bedToGrpcBed(s.db, resSorted[i]))
 	}
 	return &grpc_gen.BedList{Beds: beds}, nil
 }
 func (s *publicService) GetBed(_ context.Context, req *grpc_gen.BedId) (*grpc_gen.GetBedResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	res, err := s.db.Collection("beds").Find(
 		context.TODO(),
 		bson.D{{Key: "id", Value: req.BedId}},
@@ -137,9 +153,12 @@ func (s *publicService) GetBed(_ context.Context, req *grpc_gen.BedId) (*grpc_ge
 		return nil, err
 	}
 
-	return &grpc_gen.GetBedResponse{Bed: bedToGrpcBed(currentBed)}, nil
+	return &grpc_gen.GetBedResponse{Bed: bedToGrpcBed(s.db, currentBed)}, nil
 }
 func (s *publicService) GetReview(_ context.Context, req *grpc_gen.GetReviewsRequest) (*grpc_gen.GetReviewsResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	res, err := s.db.Collection("beds").Find(
 		context.TODO(),
 		bson.D{{Key: "id", Value: req.BedId.BedId}},

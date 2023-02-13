@@ -11,6 +11,7 @@ import (
 	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
 	"github.com/badoux/checkmail"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -89,7 +90,7 @@ func allDistinct[T comparable](s []T) bool {
 	return true
 }
 
-func bedToGrpcBed(b bed) *grpc_gen.Bed {
+func bedToGrpcBed(db *mongo.Database, b bed) *grpc_gen.Bed {
 	dateAvailables := make([]*grpc_gen.Date, len(b.DateAvailables))
 	for _, v := range b.DateAvailables {
 		dateAvailables = append(dateAvailables, deflatterizeDate(v))
@@ -99,8 +100,18 @@ func bedToGrpcBed(b bed) *grpc_gen.Bed {
 		tmp2 := uint32(*b.AverageEvaluation)
 		averageEvaluation = &tmp2
 	}
+
+	res := db.Collection("accounts").FindOne(
+		context.TODO(),
+		bson.D{{Key: "_id", Value: b.Host}},
+	)
+	var host account
+	res.Decode(&host)
+
 	return &grpc_gen.Bed{
-		Id: &grpc_gen.BedId{BedId: b.Id},
+		Id:                   &grpc_gen.BedId{BedId: b.Id},
+		HostPublicKey:        host.PublicKey,
+		HostTelegramUsername: host.TelegramUsername,
 		BedMutableInfo: &grpc_gen.BedMutableInfo{
 			Address:           b.Address,
 			Coordinates:       &grpc_gen.Coordinates{Latitude: b.Latitude, Longitude: b.Longitude},

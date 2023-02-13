@@ -3,11 +3,16 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
+	"math/big"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
 	"github.com/SnoozeHub/snoozehub-backend/mail"
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -21,6 +26,7 @@ type authOnlyService struct {
 	authTokens        *cache.Cache
 	db                *mongo.Database
 	attendingBookings map[booking]bool
+	mu                *sync.Mutex
 }
 
 func newAuthOnlyService(db *mongo.Database) *authOnlyService {
@@ -28,14 +34,21 @@ func newAuthOnlyService(db *mongo.Database) *authOnlyService {
 	service := authOnlyService{
 		authTokens: cache.New(24*time.Hour, 24*time.Hour),
 		db:         db,
+		mu: &sync.Mutex{},
 	}
 	return &service
 }
 func (s *authOnlyService) GetAuthTokens() *cache.Cache {
 	return s.authTokens
 }
+func (s *authOnlyService) GetMutex() *sync.Mutex {
+	return s.mu
+}
 
 func (s *authOnlyService) SignUp(ctx context.Context, req *grpc_gen.AccountInfo) (*grpc_gen.Empty, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	publicKey, err := s.auth(ctx)
 	if err != nil {
 		return nil, err
@@ -52,13 +65,13 @@ func (s *authOnlyService) SignUp(ctx context.Context, req *grpc_gen.AccountInfo)
 	verificationCode := GenRandomString(5)
 
 	account := account{
-		PublicKey:         publicKey,
-		Name:              req.Name,
-		Mail:              req.Mail,
-		TelegramUsername:  req.TelegramUsername,
-		ProfilePic:        nil,
-		VerificationCode:  &verificationCode,
-		BedIdsBookings: []string{},
+		PublicKey:        publicKey,
+		Name:             req.Name,
+		Mail:             req.Mail,
+		TelegramUsername: req.TelegramUsername,
+		ProfilePic:       nil,
+		VerificationCode: &verificationCode,
+		BedIdsBookings:   []string{},
 	}
 	accountMarsheled, _ := bson.Marshal(account)
 
@@ -67,9 +80,14 @@ func (s *authOnlyService) SignUp(ctx context.Context, req *grpc_gen.AccountInfo)
 		accountMarsheled,
 	)
 
+	mail.Send(req.Mail, "Verify your mail", "Verification code: "+verificationCode)
+
 	return &grpc_gen.Empty{}, nil
 }
 func (s *authOnlyService) VerifyMail(ctx context.Context, req *grpc_gen.VerifyMailRequest) (*grpc_gen.VerifyMailResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	publicKey, err := s.authAndExist(ctx)
 	if err != nil {
 		return nil, err
@@ -97,6 +115,9 @@ func (s *authOnlyService) VerifyMail(ctx context.Context, req *grpc_gen.VerifyMa
 	}
 }
 func (s *authOnlyService) GetAccountInfo(ctx context.Context, req *grpc_gen.Empty) (*grpc_gen.AccountInfo, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	publicKey, err := s.authAndExist(ctx)
 	if err != nil {
 		return nil, err
@@ -121,6 +142,9 @@ func (s *authOnlyService) GetAccountInfo(ctx context.Context, req *grpc_gen.Empt
 	return &accInfo, nil
 }
 func (s *authOnlyService) GetProfilePic(ctx context.Context, req *grpc_gen.Empty) (*grpc_gen.ProfilePic, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	publicKey, err := s.authAndExist(ctx)
 	if err != nil {
 		return nil, err
@@ -143,6 +167,9 @@ func (s *authOnlyService) GetProfilePic(ctx context.Context, req *grpc_gen.Empty
 	return &profPic, nil
 }
 func (s *authOnlyService) SetProfilePic(ctx context.Context, req *grpc_gen.ProfilePic) (*grpc_gen.Empty, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	publicKey, err := s.authAndExist(ctx)
 	if err != nil {
 		return nil, err
@@ -166,6 +193,9 @@ func (s *authOnlyService) SetProfilePic(ctx context.Context, req *grpc_gen.Profi
 	return &grpc_gen.Empty{}, nil
 }
 func (s *authOnlyService) DeleteAccount(ctx context.Context, req *grpc_gen.Empty) (*grpc_gen.Empty, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	publicKey, err := s.authAndExist(ctx)
 	if err != nil {
 		return nil, err
@@ -182,6 +212,9 @@ func (s *authOnlyService) DeleteAccount(ctx context.Context, req *grpc_gen.Empty
 	return &grpc_gen.Empty{}, nil
 }
 func (s *authOnlyService) UpdateAccountInfo(ctx context.Context, req *grpc_gen.AccountInfo) (*grpc_gen.Empty, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	publicKey, err := s.authAndExist(ctx)
 	if err != nil {
 		return nil, err
@@ -204,7 +237,8 @@ func (s *authOnlyService) UpdateAccountInfo(ctx context.Context, req *grpc_gen.A
 	if acc.Mail != req.Mail {
 		tmp := GenRandomString(5)
 		verificationCode = &tmp
-		//TODO send mail
+
+		mail.Send(acc.Mail, "Verify your mail", "Verification code: "+*verificationCode)
 	}
 
 	s.db.Collection("accounts").ReplaceOne(
@@ -219,6 +253,9 @@ func (s *authOnlyService) UpdateAccountInfo(ctx context.Context, req *grpc_gen.A
 	return &grpc_gen.Empty{}, nil
 }
 func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grpc_gen.BookResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	publicKey, err := s.authAndExistAndVerified(ctx)
 	if err != nil {
 		return nil, err
@@ -233,7 +270,6 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 		Date:  flatterizeDate(req.Date),
 	}
 
-
 	// check if another booking is running
 	_, exist := s.attendingBookings[book]
 	if exist {
@@ -242,7 +278,6 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 
 	s.attendingBookings[book] = true
 
-
 	// get host public key
 	res := s.db.Collection("beds").FindOne(
 		context.TODO(),
@@ -250,15 +285,13 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 	)
 	var b bed
 	res.Decode(&b)
-	res = s.db.Collection("beds").FindOne(
+	res = s.db.Collection("accounts").FindOne(
 		context.TODO(),
 		bson.D{{Key: "_id", Value: b.Host}},
 	)
 
-	var a account
-	res.Decode(&a)
-	hostPublicKey := a.PublicKey
-
+	var host account
+	res.Decode(&host)
 
 	// Check if transfer is done
 	client, err := ethclient.Dial("https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161")
@@ -276,48 +309,125 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 	}
 
 	go func() {
+
 		timeout := time.After(60 * time.Second)
+
+		contractAbi, _ := abi.JSON(strings.NewReader(restAbiJson))
 
 		for {
 			select {
 			case <-sub.Err():
-				return 
+				return
 			case <-timeout:
 				return
 			case log := <-logs:
-				hostPublicKey = hostPublicKey
-				publicKey=publicKey
-				log = log
+				var amount struct{ Value *big.Int }
+				contractAbi.UnpackIntoInterface(&amount, "Transfer", log.Data)
+				from := common.BytesToAddress(log.Topics[1].Bytes()).String()
+				to := common.BytesToAddress(log.Topics[2].Bytes()).String()
+
+				// actual check
+				if from == publicKey && to == host.PublicKey && amount.Value.Cmp(big.NewInt(1)) >= 0 {
+					s.mu.Lock()
+					defer s.mu.Unlock()
+
+					// check if the guest account still exist and the booking is still valid, otherwise return
+					publicKey, err := s.authAndExistAndVerified(ctx)
+					if err != nil {
+						return
+					}
+					if !s.isBookingValid(req) {
+						return
+					}
+
+					humanProofToken := GenRandomString(4)
+
+					// get latest host informations
+					res = s.db.Collection("accounts").FindOne(
+						context.TODO(),
+						bson.D{{Key: "_id", Value: b.Host}},
+					)
+					res.Decode(&host)
+
+					// send mails
+					bookingInfo :=
+						`Booking info:
+					Bed id: ` + req.BedId.BedId +
+							`Date: ` + fmt.Sprint(req.Date.Day, '/', req.Date.Month, '/', req.Date.Year)
+					mail.Send(host.Mail, "You have a new guest!", bookingInfo+"\nIn order to authenticate him, use the following snooze token: "+humanProofToken)
+
+					res = s.db.Collection("accounts").FindOne(
+						context.TODO(),
+						bson.D{{Key: "publicKey", Value: publicKey}},
+					)
+
+					var guest account
+					res.Decode(&guest)
+
+					mail.Send(guest.Mail, "You have booked a bed!", bookingInfo+"\nIn order to authenticate you with the host, use the following snooze token: "+humanProofToken)
+
+					// update db
+					filter := bson.M{"PublicKey": host.PublicKey}
+					update := bson.M{"$addToSet": bson.M{"BedIdsBookings": req.BedId}}
+					s.db.Collection("accounts").UpdateOne(context.TODO(), filter, update)
+
+					filter = bson.M{"id": req.BedId}
+					update = bson.M{"$pull": bson.M{"DateAvailables": bson.M{"$eq": book.Date}}}
+					s.db.Collection("beds").UpdateOne(context.TODO(), filter, update)
+
+					return
+				}
 			}
 		}
 	}()
 
 	return &grpc_gen.BookResponse{IsBookingUnlocked: true}, nil
 }
-func (s *authOnlyService) GetMyBookings(context.Context, *grpc_gen.Empty) (*grpc_gen.GetBookingsResponse, error) {
-	return nil, nil
-}
 func (s *authOnlyService) Review(context.Context, *grpc_gen.ReviewRequest) (*grpc_gen.Empty, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	return nil, nil
 }
 func (s *authOnlyService) RemoveReview(context.Context, *grpc_gen.BedId) (*grpc_gen.Empty, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	return nil, nil
 }
 func (s *authOnlyService) AddBed(context.Context, *grpc_gen.BedMutableInfo) (*grpc_gen.Empty, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	return nil, nil
 }
 func (s *authOnlyService) ModifyMyBed(context.Context, *grpc_gen.ModifyBedRequest) (*grpc_gen.Empty, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	return nil, nil
 }
 func (s *authOnlyService) RemoveMyBed(context.Context, *grpc_gen.BedId) (*grpc_gen.Empty, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	return nil, nil
 }
 func (s *authOnlyService) GetMyBeds(context.Context, *grpc_gen.Empty) (*grpc_gen.BedList, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	return nil, nil
 }
 func (s *authOnlyService) AddBookingAvaiability(context.Context, *grpc_gen.Booking) (*grpc_gen.Empty, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	return nil, nil
 }
 func (s *authOnlyService) RemoveBookAvaiability(context.Context, *grpc_gen.Booking) (*grpc_gen.Empty, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	return nil, nil
 }

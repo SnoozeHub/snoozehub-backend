@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 
 	"math/big"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -36,9 +37,6 @@ func Test(t *testing.T) {
 		}
 	}
 }
-
-
-
 
 func TestMail243(t *testing.T) {
 	client, _ := ethclient.Dial("wss://goerli.infura.io/ws/v3/9aa3d95b3bc440fa88ea12eaa4456161")
@@ -66,8 +64,8 @@ func TestMail243(t *testing.T) {
 		case log := <-logs:
 			var amount struct{ Value *big.Int }
 			contractAbi.UnpackIntoInterface(&amount, "Transfer", log.Data)
-			from := common.BytesToAddress(log.Topics[1].Bytes())
-			to := common.BytesToAddress(log.Topics[2].Bytes())
+			from := common.BytesToAddress(log.Topics[1].Bytes()).String()
+			to := common.BytesToAddress(log.Topics[2].Bytes()).String()
 			t.Log(from)
 			t.Log(to)
 			t.Log(amount)

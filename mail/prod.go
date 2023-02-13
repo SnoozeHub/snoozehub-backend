@@ -4,7 +4,7 @@ package mail
 
 import (
 	_ "embed"
-	"io/ioutil"
+	"os"
 
 	"github.com/mailgun/mailgun-go"
 )
@@ -12,8 +12,12 @@ import (
 var mailgunSendindKey string
 
 func Init() {
-	tmp, _ := ioutil.ReadFile("secrets/mailgun-sending-key.key")
-	mailgunSendindKey = string(tmp)
+	file, _ := os.Open("secrets/mailgun-sending-key.key")
+	defer file.Close()
+	fi, _ := file.Stat()
+	data := make([]byte, fi.Size())
+	_, _ = file.Read(data)
+	mailgunSendindKey = string(data)
 }
 
 func Send(to string, subject string, message string) error {
