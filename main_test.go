@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
+	"github.com/SnoozeHub/snoozehub-backend/mail"
 	asserter "github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -75,18 +76,21 @@ func TestRpcs(t *testing.T) {
 		metadata.Pairs("authToken", token),
 	)
 
-	t.Run("TestSignUp", func(t *testing.T) {
+	t.Run("TestSignUpAndVerify", func(t *testing.T) {
 		assert := asserter.New(t)
 
-		var header, trailer metadata.MD // variable to store header and trailer
-
 		_, err := authOnlyService.SignUp(ctx, &grpc_gen.AccountInfo{
-			Name:             "name",
+			Name:             "user",
 			Mail:             "user@example.com",
 			TelegramUsername: "username",
 		},
-			grpc.Header(&header),   // will retrieve header
-			grpc.Trailer(&trailer), // will retrieve trailer
+		)
+		assert.Nil(err)
+
+		t.Log(mail.LatestMessage[19:])
+		_, err = authOnlyService.VerifyMail(ctx, &grpc_gen.VerifyMailRequest{
+			VerificationCode: mail.LatestMessage[19:],
+		},
 		)
 		assert.Nil(err)
 	})

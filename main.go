@@ -29,15 +29,6 @@ func setupDb(db *mongo.Database) error {
 		if err != nil {
 			return err
 		}
-		_, err = db.Collection("beds").Indexes().CreateOne(
-			context.TODO(),
-			mongo.IndexModel{
-				Keys: bson.D{{Key: "id", Value: 1}},
-			},
-		)
-		if err != nil {
-			return err
-		}
 	*/
 	return nil
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/patrickmn/go-cache"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -71,15 +72,14 @@ func (s *authOnlyService) SignUp(ctx context.Context, req *grpc_gen.AccountInfo)
 		TelegramUsername: req.TelegramUsername,
 		ProfilePic:       nil,
 		VerificationCode: &verificationCode,
-		BedIdsBookings:   []string{},
+		BedIdBookings:    []primitive.ObjectID{},
 	}
 	accountMarsheled, _ := bson.Marshal(account)
 
-	_, err = s.db.Collection("accounts").InsertOne(
+	s.db.Collection("accounts").InsertOne(
 		context.TODO(),
 		accountMarsheled,
 	)
-	//return nil, errors.New(err.Error()) #TODO
 
 	mail.Send(req.Mail, "Verify your mail", "Verification code: "+verificationCode)
 
@@ -99,8 +99,8 @@ func (s *authOnlyService) VerifyMail(ctx context.Context, req *grpc_gen.VerifyMa
 	}
 
 	filter := bson.D{{Key: "publicKey", Value: publicKey}, {Key: "verificationCode", Value: req.VerificationCode}}
-	tmp := ""
-	update := bson.D{{Key: "$set", Value: bson.D{{Key: "verificationCode", Value: tmp}}}}
+	var tmp *string = nil
+	update := bson.D{{Key: "verificationCode", Value: tmp}}
 
 	res, err := s.db.Collection("accounts").ReplaceOne(
 		context.TODO(),
@@ -128,7 +128,7 @@ func (s *authOnlyService) GetAccountInfo(ctx context.Context, req *grpc_gen.Empt
 		context.TODO(),
 		bson.D{{Key: "public_key", Value: publicKey}},
 	)
-	if res == nil {
+	if res.Err() != nil {
 		return nil, errors.New("error getting the account")
 	}
 	var acc account
@@ -156,7 +156,7 @@ func (s *authOnlyService) GetProfilePic(ctx context.Context, req *grpc_gen.Empty
 		bson.D{{Key: "publicKey", Value: publicKey}},
 	)
 
-	if res == nil {
+	if res.Err() != nil {
 		return nil, errors.New("error getting the account")
 	}
 	var acc account
@@ -282,7 +282,7 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 	// get host public key
 	res := s.db.Collection("beds").FindOne(
 		context.TODO(),
-		bson.D{{Key: "id", Value: book.BedId}},
+		bson.D{{Key: "_id", Value: book.BedId}},
 	)
 	var b bed
 	res.Decode(&b)
@@ -372,7 +372,7 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 					update := bson.M{"$addToSet": bson.M{"BedIdsBookings": req.BedId}}
 					s.db.Collection("accounts").UpdateOne(context.TODO(), filter, update)
 
-					filter = bson.M{"id": req.BedId}
+					filter = bson.M{"_id": req.BedId}
 					update = bson.M{"$pull": bson.M{"DateAvailables": bson.M{"$eq": book.Date}}}
 					s.db.Collection("beds").UpdateOne(context.TODO(), filter, update)
 

@@ -108,7 +108,7 @@ func bedToGrpcBed(db *mongo.Database, b bed) *grpc_gen.Bed {
 	res.Decode(&host)
 
 	return &grpc_gen.Bed{
-		Id:                   &grpc_gen.BedId{BedId: b.Id},
+		Id:                   &grpc_gen.BedId{BedId: b.Id.Hex()},
 		HostPublicKey:        host.PublicKey,
 		HostTelegramUsername: host.TelegramUsername,
 		BedMutableInfo: &grpc_gen.BedMutableInfo{
@@ -159,7 +159,7 @@ func (s *authOnlyService) accountExist(publicKey string) bool {
 		context.TODO(),
 		bson.D{{Key: "publicKey", Value: publicKey}},
 	)
-	return res == nil
+	return res.Err() == nil
 }
 
 func (s *authOnlyService) authAndExist(ctx context.Context) (publicKey string, err error) {
@@ -180,7 +180,7 @@ func (s *authOnlyService) authAndExistAndVerified(ctx context.Context) (publicKe
 		context.TODO(),
 		bson.D{{Key: "publicKey", Value: publicKey}, {Key: "verificationCode", Value: tmp}},
 	)
-	if res != nil {
+	if res.Err() != nil {
 		err = errors.New("account doesn't exist or not verified")
 	}
 	return
@@ -189,9 +189,9 @@ func (s *authOnlyService) authAndExistAndVerified(ctx context.Context) (publicKe
 func (s *authOnlyService) isBookingValid(book *grpc_gen.Booking) bool {
 	res := s.db.Collection("beds").FindOne(
 		context.TODO(),
-		bson.D{{Key: "id", Value: book.BedId.BedId}},
+		bson.D{{Key: "_id", Value: book.BedId.BedId}},
 	)
-	if res == nil {
+	if res.Err() != nil {
 		return false
 	}
 	var b bed

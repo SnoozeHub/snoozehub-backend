@@ -146,7 +146,7 @@ func (s *publicService) GetBed(_ context.Context, req *grpc_gen.BedId) (*grpc_ge
 
 	res, err := s.db.Collection("beds").Find(
 		context.TODO(),
-		bson.D{{Key: "id", Value: req.BedId}},
+		bson.D{{Key: "_id", Value: req.BedId}},
 	)
 	if err != nil {
 		return nil, err
@@ -169,7 +169,7 @@ func (s *publicService) GetReview(_ context.Context, req *grpc_gen.GetReviewsReq
 
 	res, err := s.db.Collection("beds").Find(
 		context.TODO(),
-		bson.D{{Key: "id", Value: req.BedId.BedId}},
+		bson.D{{Key: "_id", Value: req.BedId.BedId}},
 	)
 	if err != nil {
 		return nil, err
