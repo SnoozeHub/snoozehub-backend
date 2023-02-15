@@ -34,7 +34,7 @@ func newAuthOnlyService(db *mongo.Database) *authOnlyService {
 	service := authOnlyService{
 		authTokens: cache.New(24*time.Hour, 24*time.Hour),
 		db:         db,
-		mu: &sync.Mutex{},
+		mu:         &sync.Mutex{},
 	}
 	return &service
 }
@@ -75,10 +75,11 @@ func (s *authOnlyService) SignUp(ctx context.Context, req *grpc_gen.AccountInfo)
 	}
 	accountMarsheled, _ := bson.Marshal(account)
 
-	s.db.Collection("accounts").InsertOne(
+	_, err = s.db.Collection("accounts").InsertOne(
 		context.TODO(),
 		accountMarsheled,
 	)
+	//return nil, errors.New(err.Error()) #TODO
 
 	mail.Send(req.Mail, "Verify your mail", "Verification code: "+verificationCode)
 
@@ -175,7 +176,7 @@ func (s *authOnlyService) SetProfilePic(ctx context.Context, req *grpc_gen.Profi
 		return nil, err
 	}
 
-	if len(req.Image) > 512*1024 {
+	if !isImageValid(req.Image) {
 		return nil, errors.New("too large image")
 	}
 
@@ -395,9 +396,29 @@ func (s *authOnlyService) RemoveReview(context.Context, *grpc_gen.BedId) (*grpc_
 
 	return nil, nil
 }
-func (s *authOnlyService) AddBed(context.Context, *grpc_gen.BedMutableInfo) (*grpc_gen.Empty, error) {
+func (s *authOnlyService) AddBed(ctx context.Context, req *grpc_gen.BedMutableInfo) (*grpc_gen.Empty, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	publicKey, err := s.authAndExistAndVerified(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	validImages := func(images [][]byte) bool {
+		for _, v := range images {
+			if !isImageValid(v) {
+				return false
+			}
+		}
+		return true
+	}
+	if len(req.Address) < 1 || len(req.Address) > 100 || req.Coordinates.Latitude < -90 || req.Coordinates.Latitude > 90 || req.Coordinates.Longitude < -180 || req.Coordinates.Longitude > 180 ||
+		len(req.Description) > 200 || !allDistinct(req.Features) || len(req.Images) < 1 || len(req.Images) > 5 || validImages(req.Images) || req.MinimumDaysNotice < 1 || req.MinimumDaysNotice > 30 {
+		return nil, errors.New("invalid request")
+	}
+
+	publicKey = publicKey // todo
 
 	return nil, nil
 }

@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"errors"
 	"math/rand"
-	"regexp"
 	"time"
 
 	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
@@ -127,19 +126,17 @@ func bedToGrpcBed(db *mongo.Database, b bed) *grpc_gen.Bed {
 }
 
 func isAccountInfoValid(ai *grpc_gen.AccountInfo) bool {
-	return len(ai.Name) >= 1 && len(ai.Name) <= 40 && checkmail.ValidateFormat(ai.Mail) == nil && len(ai.Mail) <= 60 &&
-		regexp.MustCompile("^(?=.{5,32}$)(?!.*__)(?!^(telegram|admin|support))[a-z][a-z0-9_]*[a-z0-9]$").MatchString(ai.TelegramUsername)
+	return len(ai.Name) >= 1 && len(ai.Name) <= 40 && checkmail.ValidateFormat(ai.Mail) == nil && len(ai.Mail) <= 60
 }
 
 // returns the publicKey only if is valid
 func (s *authOnlyService) auth(ctx context.Context) (publicKey string, _ error) {
-
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return "", errors.New("can't get metadata")
 	}
 
-	authTokenArr := md["authToken"]
+	authTokenArr := md["authtoken"]
 	if len(authTokenArr) != 1 {
 		return "", errors.New("invalid authToken metadata")
 	}
@@ -218,3 +215,7 @@ type booking struct {
 
 //go:embed assets/rest-abi.json
 var restAbiJson string
+
+func isImageValid(image []byte) bool {
+	return len(image) <= 512*1024
+}

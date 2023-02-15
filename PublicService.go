@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"errors"
+	"math/big"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -50,13 +53,18 @@ func (s *publicService) Auth(_ context.Context, req *grpc_gen.AuthRequest) (*grp
 		return nil, errors.New("expired or non existing nonce")
 	}
 
-	nonceHashed := crypto.Keccak256Hash([]byte(req.Nonce))
-	publicKeyBytes, err := crypto.Ecrecover(nonceHashed.Bytes(), []byte(req.SignedNonce))
+	nonceHashed := crypto.Keccak256Hash([]byte("\x19Ethereum Signed Message:\n" + strconv.Itoa(len(req.Nonce)) + req.Nonce))
+	UncompressedPublicKeyBytes, err := crypto.Ecrecover(nonceHashed.Bytes(), req.SignedNonce)
 	if err != nil {
 		return nil, errors.New("invalid signedNonce")
 	}
-	publicKey := string(publicKeyBytes)
+
+	x := new(big.Int).SetBytes(UncompressedPublicKeyBytes[1:33])
+	y := new(big.Int).SetBytes(UncompressedPublicKeyBytes[33:])
+	publicKey := crypto.PubkeyToAddress(ecdsa.PublicKey{Curve: crypto.S256(), X: x, Y: y}).String()
+
 	token := GenRandomString(20)
+
 	s.authTokens.Add(token, publicKey, cache.DefaultExpiration)
 
 	res, err := s.db.Collection("accounts").Find(

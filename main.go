@@ -6,7 +6,6 @@ import (
 	"net"
 
 	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
@@ -19,34 +18,37 @@ type Trainer struct {
 }
 
 func setupDb(db *mongo.Database) error {
-	_, err := db.Collection("accounts").Indexes().CreateOne(
-		context.TODO(),
-		mongo.IndexModel{
-			Keys:    bson.D{{Key: "publicKey", Value: 1}},
-			Options: options.Index().SetUnique(true),
-		},
-	)
-	if err != nil {
-		return err
-	}
-	_, err = db.Collection("beds").Indexes().CreateOne(
-		context.TODO(),
-		mongo.IndexModel{
-			Keys: bson.D{{Key: "place", Value: 1}},
-		},
-	)
-	if err != nil {
-		return err
-	}
+	/*
+		_, err := db.Collection("accounts").Indexes().CreateOne(
+			context.TODO(),
+			mongo.IndexModel{
+				Keys:    bson.D{{Key: "publicKey", Value: 1}},
+				Options: options.Index().SetUnique(true),
+			},
+		)
+		if err != nil {
+			return err
+		}
+		_, err = db.Collection("beds").Indexes().CreateOne(
+			context.TODO(),
+			mongo.IndexModel{
+				Keys: bson.D{{Key: "id", Value: 1}},
+			},
+		)
+		if err != nil {
+			return err
+		}
+	*/
 	return nil
 }
 func runGrpc() error {
 	lis, err := net.Listen("tcp", ":9090")
+
 	if err != nil {
 		return err
 	}
 
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://mongodb:27017"))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://root:root@mongodb:27017"))
 	if err != nil {
 		return err
 	}

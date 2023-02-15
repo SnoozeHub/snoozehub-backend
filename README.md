@@ -9,7 +9,8 @@ We are using a proxy server for the grpc server from https://github.com/improbab
 1. Place 'mailgun-sending-key.key' file in secrets folder
 2. Open The folder in vscode
 3. Using remote container extension, select reopen in container
-4. Develop or go to [localhost:8081](localhost:8081) to manage the database
+4. Install reccomended tools
+5. Develop or go to [localhost:8081](localhost:8081) to manage the database
 # How to use for production
 TODO
 
@@ -18,3 +19,6 @@ SetProfilePic doesn't check if it is avif
 removeAccount remove only the account itself
 non optional values are assumed that are optional, it can crash
 add check if booking is valid with MinimumDaysNotice
+
+add regex of telegram username to check also that
+add indeces in setupdb function
