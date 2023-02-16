@@ -20,7 +20,7 @@ type Trainer struct {
 func setupDb(db *mongo.Database) error {
 	/*
 		_, err := db.Collection("accounts").Indexes().CreateOne(
-			context.TODO(),
+			context.Background(),
 			mongo.IndexModel{
 				Keys:    bson.D{{Key: "publicKey", Value: 1}},
 				Options: options.Index().SetUnique(true),
@@ -39,12 +39,12 @@ func runGrpc() error {
 		return err
 	}
 
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://root:root@mongodb:27017"))
+	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI("mongodb://root:root@mongodb:27017"))
 	if err != nil {
 		return err
 	}
-	defer client.Disconnect(context.TODO())
-	err = client.Ping(context.TODO(), nil)
+	defer client.Disconnect(context.Background())
+	err = client.Ping(context.Background(), nil)
 	if err != nil {
 		return err
 	}

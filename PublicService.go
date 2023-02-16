@@ -68,13 +68,13 @@ func (s *publicService) Auth(_ context.Context, req *grpc_gen.AuthRequest) (*grp
 	s.authTokens.Add(token, publicKey, cache.DefaultExpiration)
 
 	res, err := s.db.Collection("accounts").Find(
-		context.TODO(),
+		context.Background(),
 		bson.D{{Key: "publicKey", Value: publicKey}},
 	)
 	if err != nil {
 		return nil, err
 	}
-	accountExist := res.Next(context.TODO())
+	accountExist := res.Next(context.Background())
 	return &grpc_gen.AuthResponse{
 		AuthToken:    token,
 		AccountExist: accountExist,
@@ -115,7 +115,7 @@ func (s *publicService) GetBeds(_ context.Context, req *grpc_gen.GetBedsRequest)
 
 	// get beds
 	res, err := s.db.Collection("beds").Find(
-		context.TODO(),
+		context.Background(),
 		filter,
 	)
 	if err != nil {
@@ -124,7 +124,7 @@ func (s *publicService) GetBeds(_ context.Context, req *grpc_gen.GetBedsRequest)
 
 	// sort beds based on coordinates
 	resSorted := make([]bed, res.RemainingBatchLength())
-	err = res.All(context.TODO(), resSorted)
+	err = res.All(context.Background(), resSorted)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func (s *publicService) GetBed(_ context.Context, req *grpc_gen.BedId) (*grpc_ge
 	defer s.mu.Unlock()
 
 	res, err := s.db.Collection("beds").Find(
-		context.TODO(),
+		context.Background(),
 		bson.D{{Key: "_id", Value: req.BedId}},
 	)
 	if err != nil {
@@ -154,7 +154,7 @@ func (s *publicService) GetBed(_ context.Context, req *grpc_gen.BedId) (*grpc_ge
 	if res.RemainingBatchLength() != 1 {
 		return &grpc_gen.GetBedResponse{Bed: nil}, nil
 	}
-	res.Next(context.TODO())
+	res.Next(context.Background())
 	var currentBed bed
 	err = bson.Unmarshal(res.Current, currentBed)
 	if err != nil {
@@ -168,7 +168,7 @@ func (s *publicService) GetReview(_ context.Context, req *grpc_gen.GetReviewsReq
 	defer s.mu.Unlock()
 
 	res, err := s.db.Collection("beds").Find(
-		context.TODO(),
+		context.Background(),
 		bson.D{{Key: "_id", Value: req.BedId.BedId}},
 	)
 	if err != nil {
@@ -177,7 +177,7 @@ func (s *publicService) GetReview(_ context.Context, req *grpc_gen.GetReviewsReq
 	if res.RemainingBatchLength() != 1 {
 		return nil, errors.New("invalid id")
 	}
-	res.Next(context.TODO())
+	res.Next(context.Background())
 	var currentBed bed
 	err = bson.Unmarshal(res.Current, currentBed)
 	if err != nil {

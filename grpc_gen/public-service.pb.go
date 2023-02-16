@@ -73,7 +73,7 @@ type AuthRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	Nonce       string `protobuf:"bytes,1,opt,name=nonce,proto3" json:"nonce,omitempty"`             // Valid format
-	SignedNonce []byte `protobuf:"bytes,2,opt,name=signedNonce,proto3" json:"signedNonce,omitempty"` // it follows EIP-712 standard . Valid format
+	SignedNonce []byte `protobuf:"bytes,2,opt,name=signedNonce,proto3" json:"signedNonce,omitempty"` // it follows personal_sign metamask standard . Valid format
 }
 
 func (x *AuthRequest) Reset() {

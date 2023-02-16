@@ -101,7 +101,7 @@ func bedToGrpcBed(db *mongo.Database, b bed) *grpc_gen.Bed {
 	}
 
 	res := db.Collection("accounts").FindOne(
-		context.TODO(),
+		context.Background(),
 		bson.D{{Key: "_id", Value: b.Host}},
 	)
 	var host account
@@ -130,7 +130,7 @@ func isAccountInfoValid(ai *grpc_gen.AccountInfo) bool {
 }
 
 // returns the publicKey only if is valid
-func (s *authOnlyService) auth(ctx context.Context) (publicKey string, _ error) {
+func (s *authOnlyService) auth(ctx context.Context) (string, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return "", errors.New("can't get metadata")
@@ -138,28 +138,27 @@ func (s *authOnlyService) auth(ctx context.Context) (publicKey string, _ error) 
 
 	authTokenArr := md["authtoken"]
 	if len(authTokenArr) != 1 {
-		return "", errors.New("invalid authToken metadata")
+		return "", errors.New("invalid authtoken metadata")
 	}
 
 	authToken := authTokenArr[0]
 
 	tmp, exist := s.authTokens.Get(authToken)
 	if !exist {
-		return "", errors.New("invalid or expired authToken")
+		return "", errors.New("invalid or expired authtoken")
 	}
 
-	publicKey, _ = tmp.(string)
+	publicKey, _ := tmp.(string)
 
 	return publicKey, nil
 }
 
 // publicKey is valid
 func (s *authOnlyService) accountExist(publicKey string) bool {
-	res := s.db.Collection("accounts").FindOne(
-		context.TODO(),
+	return s.db.Collection("accounts").FindOne(
+		context.Background(),
 		bson.D{{Key: "publicKey", Value: publicKey}},
-	)
-	return res.Err() == nil
+	).Err() == nil
 }
 
 func (s *authOnlyService) authAndExist(ctx context.Context) (publicKey string, err error) {
@@ -177,7 +176,7 @@ func (s *authOnlyService) authAndExistAndVerified(ctx context.Context) (publicKe
 	}
 	var tmp *string = nil
 	res := s.db.Collection("accounts").FindOne(
-		context.TODO(),
+		context.Background(),
 		bson.D{{Key: "publicKey", Value: publicKey}, {Key: "verificationCode", Value: tmp}},
 	)
 	if res.Err() != nil {
@@ -188,7 +187,7 @@ func (s *authOnlyService) authAndExistAndVerified(ctx context.Context) (publicKe
 
 func (s *authOnlyService) isBookingValid(book *grpc_gen.Booking) bool {
 	res := s.db.Collection("beds").FindOne(
-		context.TODO(),
+		context.Background(),
 		bson.D{{Key: "_id", Value: book.BedId.BedId}},
 	)
 	if res.Err() != nil {

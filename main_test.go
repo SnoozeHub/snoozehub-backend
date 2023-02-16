@@ -22,7 +22,7 @@ import (
 )
 
 func TestDbConection(t *testing.T) {
-	_, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://mongodb:27017"))
+	_, err := mongo.Connect(context.Background(), options.Client().ApplyURI("mongodb://mongodb:27017"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestRpcs(t *testing.T) {
 	})
 	ctx := metadata.NewOutgoingContext(
 		context.Background(),
-		metadata.Pairs("authToken", token),
+		metadata.Pairs("authtoken", token),
 	)
 
 	t.Run("TestSignUpAndVerify", func(t *testing.T) {
@@ -93,5 +93,16 @@ func TestRpcs(t *testing.T) {
 		},
 		)
 		assert.Nil(err)
+	})
+
+	t.Run("TestGetAccountInfo", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		accountInfo, err := authOnlyService.GetAccountInfo(ctx, &grpc_gen.Empty{})
+		assert.Nil(err)
+
+		assert.Equal(accountInfo.Mail, "user@example.com")
+		assert.Equal(accountInfo.Name, "user")
+		assert.Equal(accountInfo.TelegramUsername, "username")
 	})
 }

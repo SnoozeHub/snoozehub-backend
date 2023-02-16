@@ -77,7 +77,7 @@ func (s *authOnlyService) SignUp(ctx context.Context, req *grpc_gen.AccountInfo)
 	accountMarsheled, _ := bson.Marshal(account)
 
 	s.db.Collection("accounts").InsertOne(
-		context.TODO(),
+		context.Background(),
 		accountMarsheled,
 	)
 
@@ -100,10 +100,10 @@ func (s *authOnlyService) VerifyMail(ctx context.Context, req *grpc_gen.VerifyMa
 
 	filter := bson.D{{Key: "publicKey", Value: publicKey}, {Key: "verificationCode", Value: req.VerificationCode}}
 	var tmp *string = nil
-	update := bson.D{{Key: "verificationCode", Value: tmp}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "verificationCode", Value: tmp}}}}
 
-	res, err := s.db.Collection("accounts").ReplaceOne(
-		context.TODO(),
+	res, err := s.db.Collection("accounts").UpdateOne(
+		context.Background(),
 		filter,
 		update,
 	)
@@ -125,8 +125,8 @@ func (s *authOnlyService) GetAccountInfo(ctx context.Context, req *grpc_gen.Empt
 	}
 
 	res := s.db.Collection("accounts").FindOne(
-		context.TODO(),
-		bson.D{{Key: "public_key", Value: publicKey}},
+		context.Background(),
+		bson.D{{Key: "publicKey", Value: publicKey}},
 	)
 	if res.Err() != nil {
 		return nil, errors.New("error getting the account")
@@ -152,7 +152,7 @@ func (s *authOnlyService) GetProfilePic(ctx context.Context, req *grpc_gen.Empty
 	}
 
 	res := s.db.Collection("accounts").FindOne(
-		context.TODO(),
+		context.Background(),
 		bson.D{{Key: "publicKey", Value: publicKey}},
 	)
 
@@ -181,10 +181,10 @@ func (s *authOnlyService) SetProfilePic(ctx context.Context, req *grpc_gen.Profi
 	}
 
 	filter := bson.D{{Key: "publicKey", Value: publicKey}}
-	update := bson.D{{Key: "$set", Value: bson.D{{Key: "profilePictire", Value: req.Image}}}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "profilePicture", Value: req.Image}}}}
 
-	_, err = s.db.Collection("accounts").ReplaceOne(
-		context.TODO(),
+	_, err = s.db.Collection("accounts").UpdateOne(
+		context.Background(),
 		filter,
 		update,
 	)
@@ -204,7 +204,7 @@ func (s *authOnlyService) DeleteAccount(ctx context.Context, req *grpc_gen.Empty
 
 	filter := bson.D{{Key: "publicKey", Value: publicKey}}
 	_, err = s.db.Collection("accounts").DeleteOne(
-		context.TODO(),
+		context.Background(),
 		filter,
 	)
 	if err != nil {
@@ -226,7 +226,7 @@ func (s *authOnlyService) UpdateAccountInfo(ctx context.Context, req *grpc_gen.A
 	}
 
 	res := s.db.Collection("accounts").FindOne(
-		context.TODO(),
+		context.Background(),
 		bson.D{{Key: "publicKey", Value: publicKey}},
 	)
 
@@ -242,13 +242,13 @@ func (s *authOnlyService) UpdateAccountInfo(ctx context.Context, req *grpc_gen.A
 		mail.Send(acc.Mail, "Verify your mail", "Verification code: "+*verificationCode)
 	}
 
-	s.db.Collection("accounts").ReplaceOne(
-		context.TODO(),
+	s.db.Collection("accounts").UpdateOne(
+		context.Background(),
 		bson.D{{Key: "publicKey", Value: publicKey}},
-		bson.D{{Key: "$set", Value: bson.D{{Key: "verificationCode", Value: verificationCode}}},
-			{Key: "$set", Value: bson.D{{Key: "name", Value: req.Name}}},
-			{Key: "$set", Value: bson.D{{Key: "mail", Value: req.Mail}}},
-			{Key: "$set", Value: bson.D{{Key: "telegramUsername", Value: req.TelegramUsername}}}},
+		bson.D{{Key: "$set", Value: bson.D{{Key: "verificationCode", Value: verificationCode},
+			{Key: "name", Value: req.Name},
+			{Key: "mail", Value: req.Mail},
+			{Key: "telegramUsername", Value: req.TelegramUsername}}}},
 	)
 
 	return &grpc_gen.Empty{}, nil
@@ -281,13 +281,13 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 
 	// get host public key
 	res := s.db.Collection("beds").FindOne(
-		context.TODO(),
+		context.Background(),
 		bson.D{{Key: "_id", Value: book.BedId}},
 	)
 	var b bed
 	res.Decode(&b)
 	res = s.db.Collection("accounts").FindOne(
-		context.TODO(),
+		context.Background(),
 		bson.D{{Key: "_id", Value: b.Host}},
 	)
 
@@ -345,7 +345,7 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 
 					// get latest host informations
 					res = s.db.Collection("accounts").FindOne(
-						context.TODO(),
+						context.Background(),
 						bson.D{{Key: "_id", Value: b.Host}},
 					)
 					res.Decode(&host)
@@ -358,7 +358,7 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 					mail.Send(host.Mail, "You have a new guest!", bookingInfo+"\nIn order to authenticate him, use the following snooze token: "+humanProofToken)
 
 					res = s.db.Collection("accounts").FindOne(
-						context.TODO(),
+						context.Background(),
 						bson.D{{Key: "publicKey", Value: publicKey}},
 					)
 
@@ -370,11 +370,11 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 					// update db
 					filter := bson.M{"PublicKey": host.PublicKey}
 					update := bson.M{"$addToSet": bson.M{"BedIdsBookings": req.BedId}}
-					s.db.Collection("accounts").UpdateOne(context.TODO(), filter, update)
+					s.db.Collection("accounts").UpdateOne(context.Background(), filter, update)
 
 					filter = bson.M{"_id": req.BedId}
 					update = bson.M{"$pull": bson.M{"DateAvailables": bson.M{"$eq": book.Date}}}
-					s.db.Collection("beds").UpdateOne(context.TODO(), filter, update)
+					s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
 
 					return
 				}
@@ -418,7 +418,7 @@ func (s *authOnlyService) AddBed(ctx context.Context, req *grpc_gen.BedMutableIn
 		return nil, errors.New("invalid request")
 	}
 
-	publicKey = publicKey // todo
+	publicKey = publicKey // #todo
 
 	return nil, nil
 }

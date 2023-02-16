@@ -380,7 +380,7 @@ type Bed struct {
 	unknownFields protoimpl.UnknownFields
 
 	Id                   *BedId          `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	HostPublicKey        string          `protobuf:"bytes,2,opt,name=hostPublicKey,proto3" json:"hostPublicKey,omitempty"` // valid
+	HostPublicKey        string          `protobuf:"bytes,2,opt,name=hostPublicKey,proto3" json:"hostPublicKey,omitempty"` // in hexadecimal, start with 0x, valid (corresponding account exist)
 	HostTelegramUsername string          `protobuf:"bytes,3,opt,name=hostTelegramUsername,proto3" json:"hostTelegramUsername,omitempty"`
 	BedMutableInfo       *BedMutableInfo `protobuf:"bytes,4,opt,name=bedMutableInfo,proto3" json:"bedMutableInfo,omitempty"`
 	DateAvailables       []*Date         `protobuf:"bytes,5,rep,name=dateAvailables,proto3" json:"dateAvailables,omitempty"` //0-90 .  Refers to the night between the date and the next day. It's valid. Every date is > today. Max date is today + 90 days
