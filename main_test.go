@@ -22,7 +22,7 @@ import (
 )
 
 func TestDbConection(t *testing.T) {
-	_, err := mongo.Connect(context.Background(), options.Client().ApplyURI("mongodb://mongodb:27017"))
+	_, err := mongo.Connect(context.Background(), options.Client().ApplyURI("mongodb://root:root@mongodb:27017"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,6 +42,17 @@ func TestRESTTokenSubscription(t *testing.T) {
 }
 
 func TestRpcs(t *testing.T) {
+	// Restore default state of db
+	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI("mongodb://root:root@mongodb:27017"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = client.Database("main").Drop(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.Disconnect(context.Background())
+
 	assert := asserter.New(t)
 	go main()
 	conn, err := grpc.Dial("localhost:9090", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -104,5 +115,20 @@ func TestRpcs(t *testing.T) {
 		assert.Equal(accountInfo.Mail, "user@example.com")
 		assert.Equal(accountInfo.Name, "user")
 		assert.Equal(accountInfo.TelegramUsername, "username")
+	})
+	t.Run("ProfilePic", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		profilePic, err := authOnlyService.GetProfilePic(ctx, &grpc_gen.Empty{})
+		assert.Nil(err)
+		assert.Condition(func() bool { return len(profilePic.Image) == 0 })
+
+		_, err = authOnlyService.SetProfilePic(ctx, &grpc_gen.ProfilePic{Image: make([]byte, 512*1024+1)})
+		assert.NotNil(err)
+		_, err = authOnlyService.SetProfilePic(ctx, &grpc_gen.ProfilePic{Image: make([]byte, 512*1024)})
+		assert.Nil(err)
+		profilePic, err = authOnlyService.GetProfilePic(ctx, &grpc_gen.Empty{})
+		assert.Nil(err)
+		assert.Condition(func() bool { return len(profilePic.Image) == 512*1024 })
 	})
 }

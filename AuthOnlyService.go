@@ -181,7 +181,7 @@ func (s *authOnlyService) SetProfilePic(ctx context.Context, req *grpc_gen.Profi
 	}
 
 	filter := bson.D{{Key: "publicKey", Value: publicKey}}
-	update := bson.D{{Key: "$set", Value: bson.D{{Key: "profilePicture", Value: req.Image}}}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "profilePic", Value: req.Image}}}}
 
 	_, err = s.db.Collection("accounts").UpdateOne(
 		context.Background(),
