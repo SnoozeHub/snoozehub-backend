@@ -23,9 +23,11 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PublicServiceClient interface {
 	// Authentication
+	// Every nonce has an expiration time of 1 minute, so in this period you should call Auth
 	GetNonce(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*GetNonceResponse, error)
 	Auth(ctx context.Context, in *AuthRequest, opts ...grpc.CallOption) (*AuthResponse, error)
 	GetBeds(ctx context.Context, in *GetBedsRequest, opts ...grpc.CallOption) (*BedList, error)
+	GetBed(ctx context.Context, in *BedId, opts ...grpc.CallOption) (*GetBedResponse, error)
 	GetReview(ctx context.Context, in *GetReviewsRequest, opts ...grpc.CallOption) (*GetReviewsResponse, error)
 }
 
@@ -64,6 +66,15 @@ func (c *publicServiceClient) GetBeds(ctx context.Context, in *GetBedsRequest, o
 	return out, nil
 }
 
+func (c *publicServiceClient) GetBed(ctx context.Context, in *BedId, opts ...grpc.CallOption) (*GetBedResponse, error) {
+	out := new(GetBedResponse)
+	err := c.cc.Invoke(ctx, "/PublicService/GetBed", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *publicServiceClient) GetReview(ctx context.Context, in *GetReviewsRequest, opts ...grpc.CallOption) (*GetReviewsResponse, error) {
 	out := new(GetReviewsResponse)
 	err := c.cc.Invoke(ctx, "/PublicService/GetReview", in, out, opts...)
@@ -78,9 +89,11 @@ func (c *publicServiceClient) GetReview(ctx context.Context, in *GetReviewsReque
 // for forward compatibility
 type PublicServiceServer interface {
 	// Authentication
+	// Every nonce has an expiration time of 1 minute, so in this period you should call Auth
 	GetNonce(context.Context, *Empty) (*GetNonceResponse, error)
 	Auth(context.Context, *AuthRequest) (*AuthResponse, error)
 	GetBeds(context.Context, *GetBedsRequest) (*BedList, error)
+	GetBed(context.Context, *BedId) (*GetBedResponse, error)
 	GetReview(context.Context, *GetReviewsRequest) (*GetReviewsResponse, error)
 	mustEmbedUnimplementedPublicServiceServer()
 }
@@ -97,6 +110,9 @@ func (UnimplementedPublicServiceServer) Auth(context.Context, *AuthRequest) (*Au
 }
 func (UnimplementedPublicServiceServer) GetBeds(context.Context, *GetBedsRequest) (*BedList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBeds not implemented")
+}
+func (UnimplementedPublicServiceServer) GetBed(context.Context, *BedId) (*GetBedResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBed not implemented")
 }
 func (UnimplementedPublicServiceServer) GetReview(context.Context, *GetReviewsRequest) (*GetReviewsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetReview not implemented")
@@ -168,6 +184,24 @@ func _PublicService_GetBeds_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PublicService_GetBed_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BedId)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PublicServiceServer).GetBed(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/PublicService/GetBed",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PublicServiceServer).GetBed(ctx, req.(*BedId))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _PublicService_GetReview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetReviewsRequest)
 	if err := dec(in); err != nil {
@@ -204,6 +238,10 @@ var PublicService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetBeds",
 			Handler:    _PublicService_GetBeds_Handler,
+		},
+		{
+			MethodName: "GetBed",
+			Handler:    _PublicService_GetBed_Handler,
 		},
 		{
 			MethodName: "GetReview",
