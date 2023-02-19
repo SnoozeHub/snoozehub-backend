@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -55,6 +56,7 @@ func TestRpcs(t *testing.T) {
 
 	assert := asserter.New(t)
 	go main()
+	time.Sleep(1 * time.Second) // Give time to start the server
 	conn, err := grpc.Dial("localhost:9090", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.Nil(err)
 
@@ -67,6 +69,10 @@ func TestRpcs(t *testing.T) {
 		assert := asserter.New(t)
 
 		getNonceResponse, err := publicService.GetNonce(context.Background(), &grpc_gen.Empty{})
+		if err != nil {
+			t.Log(err.Error())
+			t.Log(err)
+		}
 		assert.Nil(err)
 
 		privateKey, _ := crypto.GenerateKey()
@@ -92,21 +98,88 @@ func TestRpcs(t *testing.T) {
 
 		_, err := authOnlyService.SignUp(ctx, &grpc_gen.AccountInfo{
 			Name:             "user",
-			Mail:             "user@example.com",
+			Mail:             "user2@example.com",
 			TelegramUsername: "username",
 		},
 		)
 		assert.Nil(err)
 
 		t.Log(mail.LatestMessage[19:])
-		_, err = authOnlyService.VerifyMail(ctx, &grpc_gen.VerifyMailRequest{
+		verifyResponse, err := authOnlyService.VerifyMail(ctx, &grpc_gen.VerifyMailRequest{
 			VerificationCode: mail.LatestMessage[19:],
 		},
 		)
 		assert.Nil(err)
+		assert.True(verifyResponse.Ok)
 	})
 
 	t.Run("TestGetAccountInfo", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		accountInfo, err := authOnlyService.GetAccountInfo(ctx, &grpc_gen.Empty{})
+		assert.Nil(err)
+
+		assert.Equal(accountInfo.Mail, "user2@example.com")
+		assert.Equal(accountInfo.Name, "user")
+		assert.Equal(accountInfo.TelegramUsername, "username")
+	})
+
+	t.Run("TestUpdateAccountInfo", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		_, err := authOnlyService.UpdateAccountInfo(ctx, &grpc_gen.AccountInfo{
+			Name:             "user2",
+			Mail:             "user@example.com",
+			TelegramUsername: "username2",
+		},
+		)
+		assert.Nil(err)
+
+		t.Log(mail.LatestMessage[19:])
+		verifyResponse, err := authOnlyService.VerifyMail(ctx, &grpc_gen.VerifyMailRequest{
+			VerificationCode: mail.LatestMessage[19:],
+		},
+		)
+		assert.Nil(err)
+		assert.True(verifyResponse.Ok)
+		verifyResponse, err = authOnlyService.VerifyMail(ctx, &grpc_gen.VerifyMailRequest{
+			VerificationCode: mail.LatestMessage[19:],
+		},
+		)
+		assert.Nil(err)
+		assert.False(verifyResponse.Ok)
+	})
+
+	t.Run("TestGetAccountInfo2", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		accountInfo, err := authOnlyService.GetAccountInfo(ctx, &grpc_gen.Empty{})
+		assert.Nil(err)
+
+		assert.Equal(accountInfo.Mail, "user@example.com")
+		assert.Equal(accountInfo.Name, "user2")
+		assert.Equal(accountInfo.TelegramUsername, "username2")
+	})
+	t.Run("TestUpdateAccountInfo2", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		_, err := authOnlyService.UpdateAccountInfo(ctx, &grpc_gen.AccountInfo{
+			Name:             "user",
+			Mail:             "user@example.com",
+			TelegramUsername: "username",
+		},
+		)
+		assert.Nil(err)
+
+		verifyResponse, err := authOnlyService.VerifyMail(ctx, &grpc_gen.VerifyMailRequest{
+			VerificationCode: mail.LatestMessage[19:],
+		},
+		)
+		assert.Nil(err)
+		assert.False(verifyResponse.Ok)
+	})
+
+	t.Run("TestGetAccountInfo3", func(t *testing.T) {
 		assert := asserter.New(t)
 
 		accountInfo, err := authOnlyService.GetAccountInfo(ctx, &grpc_gen.Empty{})
@@ -116,7 +189,7 @@ func TestRpcs(t *testing.T) {
 		assert.Equal(accountInfo.Name, "user")
 		assert.Equal(accountInfo.TelegramUsername, "username")
 	})
-	t.Run("ProfilePic", func(t *testing.T) {
+	t.Run("TestProfilePic", func(t *testing.T) {
 		assert := asserter.New(t)
 
 		profilePic, err := authOnlyService.GetProfilePic(ctx, &grpc_gen.Empty{})
@@ -130,5 +203,13 @@ func TestRpcs(t *testing.T) {
 		profilePic, err = authOnlyService.GetProfilePic(ctx, &grpc_gen.Empty{})
 		assert.Nil(err)
 		assert.Condition(func() bool { return len(profilePic.Image) == 512*1024 })
+	})
+	t.Run("TestDeleteAccount", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		_, err := authOnlyService.DeleteAccount(ctx, &grpc_gen.Empty{})
+		assert.Nil(err)
+		_, err = authOnlyService.GetAccountInfo(ctx, &grpc_gen.Empty{})
+		assert.NotNil(err)
 	})
 }
