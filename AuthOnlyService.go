@@ -433,6 +433,37 @@ func (s *authOnlyService) Review(ctx context.Context, req *grpc_gen.ReviewReques
 
 	return &grpc_gen.Empty{}, nil
 }
+func (s *authOnlyService) GetMyReview(ctx context.Context, req *grpc_gen.BedId) (*grpc_gen.GetMyReviewResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	publicKey, err := s.authAndExistAndVerified(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if !s.doesBedIdExist(req) {
+		return nil, errors.New("invalid request")
+	}
+
+	res := s.db.Collection("accounts").FindOne(
+		context.Background(),
+		bson.D{{Key: "publicKey", Value: publicKey}},
+	)
+	var a account
+	res.Decode(a)
+
+	var r *grpc_gen.Review = nil
+	b := s.getBed(req.BedId)
+	for _, v := range b.Reviews {
+		if v.Reviewer == a.Id {
+			r = &grpc_gen.Review{Evaluation: uint32(v.Evaluation), Comment: v.Comment}
+			break
+		}
+	}
+
+	return &grpc_gen.GetMyReviewResponse{Review: r}, nil
+}
 func (s *authOnlyService) RemoveReview(ctx context.Context, req *grpc_gen.BedId) (*grpc_gen.Empty, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
