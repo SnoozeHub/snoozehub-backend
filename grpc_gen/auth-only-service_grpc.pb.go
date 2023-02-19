@@ -32,7 +32,7 @@ type AuthOnlyServiceClient interface {
 	// If the mail is changed, is needed to verify the account (and the eventual old verification code becomed invalid), you can call this function even if
 	// the account is not verified, because for example the mail was wrong.
 	UpdateAccountInfo(ctx context.Context, in *AccountInfo, opts ...grpc.CallOption) (*Empty, error)
-	// FOR EVERY FOLLOWING RPC IS ASSUMED THAT THE CALLER HAS A VERIFIED ACCOUNT
+	// FOR EVERY FOLLOWING RPC (TILL SERVICE LAST RPC) IS ASSUMED THAT THE CALLER HAS A VERIFIED ACCOUNT
 	// GUEST RPCs
 	// If guest can pay, he must do it within 1 minute
 	// "Human proof token" are then sent through mail to both guest, and host
@@ -40,7 +40,7 @@ type AuthOnlyServiceClient interface {
 	Book(ctx context.Context, in *Booking, opts ...grpc.CallOption) (*BookResponse, error)
 	Review(ctx context.Context, in *ReviewRequest, opts ...grpc.CallOption) (*Empty, error)
 	// It returns the optional own review for the BedId
-	GetMyReview(ctx context.Context, in *BedId, opts ...grpc.CallOption) (*GetMyReviewRequest, error)
+	GetMyReview(ctx context.Context, in *BedId, opts ...grpc.CallOption) (*GetMyReviewResponse, error)
 	RemoveReview(ctx context.Context, in *BedId, opts ...grpc.CallOption) (*Empty, error)
 	// HOST RPCs
 	AddBed(ctx context.Context, in *BedMutableInfo, opts ...grpc.CallOption) (*Empty, error)
@@ -140,8 +140,8 @@ func (c *authOnlyServiceClient) Review(ctx context.Context, in *ReviewRequest, o
 	return out, nil
 }
 
-func (c *authOnlyServiceClient) GetMyReview(ctx context.Context, in *BedId, opts ...grpc.CallOption) (*GetMyReviewRequest, error) {
-	out := new(GetMyReviewRequest)
+func (c *authOnlyServiceClient) GetMyReview(ctx context.Context, in *BedId, opts ...grpc.CallOption) (*GetMyReviewResponse, error) {
+	out := new(GetMyReviewResponse)
 	err := c.cc.Invoke(ctx, "/AuthOnlyService/GetMyReview", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -226,7 +226,7 @@ type AuthOnlyServiceServer interface {
 	// If the mail is changed, is needed to verify the account (and the eventual old verification code becomed invalid), you can call this function even if
 	// the account is not verified, because for example the mail was wrong.
 	UpdateAccountInfo(context.Context, *AccountInfo) (*Empty, error)
-	// FOR EVERY FOLLOWING RPC IS ASSUMED THAT THE CALLER HAS A VERIFIED ACCOUNT
+	// FOR EVERY FOLLOWING RPC (TILL SERVICE LAST RPC) IS ASSUMED THAT THE CALLER HAS A VERIFIED ACCOUNT
 	// GUEST RPCs
 	// If guest can pay, he must do it within 1 minute
 	// "Human proof token" are then sent through mail to both guest, and host
@@ -234,7 +234,7 @@ type AuthOnlyServiceServer interface {
 	Book(context.Context, *Booking) (*BookResponse, error)
 	Review(context.Context, *ReviewRequest) (*Empty, error)
 	// It returns the optional own review for the BedId
-	GetMyReview(context.Context, *BedId) (*GetMyReviewRequest, error)
+	GetMyReview(context.Context, *BedId) (*GetMyReviewResponse, error)
 	RemoveReview(context.Context, *BedId) (*Empty, error)
 	// HOST RPCs
 	AddBed(context.Context, *BedMutableInfo) (*Empty, error)
@@ -277,7 +277,7 @@ func (UnimplementedAuthOnlyServiceServer) Book(context.Context, *Booking) (*Book
 func (UnimplementedAuthOnlyServiceServer) Review(context.Context, *ReviewRequest) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Review not implemented")
 }
-func (UnimplementedAuthOnlyServiceServer) GetMyReview(context.Context, *BedId) (*GetMyReviewRequest, error) {
+func (UnimplementedAuthOnlyServiceServer) GetMyReview(context.Context, *BedId) (*GetMyReviewResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMyReview not implemented")
 }
 func (UnimplementedAuthOnlyServiceServer) RemoveReview(context.Context, *BedId) (*Empty, error) {

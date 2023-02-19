@@ -66,6 +66,7 @@ func (s *authOnlyService) SignUp(ctx context.Context, req *grpc_gen.AccountInfo)
 	verificationCode := GenRandomString(5)
 
 	account := account{
+		Id:               primitive.NewObjectID(),
 		PublicKey:        publicKey,
 		Name:             req.Name,
 		Mail:             req.Mail,
@@ -369,11 +370,11 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 
 					// update db
 					filter := bson.M{"PublicKey": host.PublicKey}
-					update := bson.M{"$addToSet": bson.M{"BedIdsBookings": req.BedId}}
+					update := bson.M{"$addToSet": bson.M{"bedIdBookings": req.BedId.BedId}}
 					s.db.Collection("accounts").UpdateOne(context.Background(), filter, update)
 
 					filter = bson.M{"_id": req.BedId}
-					update = bson.M{"$pull": bson.M{"DateAvailables": bson.M{"$eq": book.Date}}}
+					update = bson.M{"$pull": bson.M{"dateAvailables": bson.M{"$eq": book.Date}}}
 					s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
 
 					return
@@ -384,17 +385,110 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 
 	return &grpc_gen.BookResponse{IsBookingUnlocked: true}, nil
 }
-func (s *authOnlyService) Review(context.Context, *grpc_gen.ReviewRequest) (*grpc_gen.Empty, error) {
+func (s *authOnlyService) Review(ctx context.Context, req *grpc_gen.ReviewRequest) (*grpc_gen.Empty, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return nil, nil
+	publicKey, err := s.authAndExistAndVerified(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	publicKeyHasBooked := func(pubKey string, bedId string) bool {
+		res := s.db.Collection("accounts").FindOne(
+			context.Background(),
+			bson.D{{Key: "publicKey", Value: pubKey}},
+		)
+		var a account
+		res.Decode(a)
+		for _, v := range a.BedIdBookings {
+			if v.Hex() == bedId {
+				return true
+			}
+		}
+		return false
+	}
+
+	if !s.doesBedIdExist(req.BedId) || !publicKeyHasBooked(publicKey, req.BedId.BedId) || s.publicKeyHasReviewed(publicKey, req.BedId.BedId) || len(req.Review.Comment) > 200 || req.Review.Evaluation > 50 {
+		return nil, errors.New("invalid request")
+	}
+
+	res := s.db.Collection("accounts").FindOne(
+		context.Background(),
+		bson.D{{Key: "publicKey", Value: publicKey}},
+	)
+	var a account
+	res.Decode(a)
+
+	r := review{
+		Reviewer:   a.Id,
+		Evaluation: int32(req.Review.Evaluation),
+		Comment:    req.Review.Comment,
+	}
+	rMarsheled, _ := bson.Marshal(r)
+	filter := bson.M{"_id": req.BedId.BedId}
+	update := bson.M{"$addToSet": bson.M{"reviews": rMarsheled}}
+
+	s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
+
+	return &grpc_gen.Empty{}, nil
 }
-func (s *authOnlyService) RemoveReview(context.Context, *grpc_gen.BedId) (*grpc_gen.Empty, error) {
+func (s *authOnlyService) GetMyReview(ctx context.Context, req *grpc_gen.BedId) (*grpc_gen.GetMyReviewResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return nil, nil
+	publicKey, err := s.authAndExistAndVerified(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if !s.doesBedIdExist(req) {
+		return nil, errors.New("invalid request")
+	}
+
+	res := s.db.Collection("accounts").FindOne(
+		context.Background(),
+		bson.D{{Key: "publicKey", Value: publicKey}},
+	)
+	var a account
+	res.Decode(a)
+
+	var r *grpc_gen.Review = nil
+	b := s.getBed(req.BedId)
+	for _, v := range b.Reviews {
+		if v.Reviewer == a.Id {
+			r = &grpc_gen.Review{Evaluation: uint32(v.Evaluation), Comment: v.Comment}
+			break
+		}
+	}
+
+	return &grpc_gen.GetMyReviewResponse{Review: r}, nil
+}
+func (s *authOnlyService) RemoveReview(ctx context.Context, req *grpc_gen.BedId) (*grpc_gen.Empty, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	publicKey, err := s.authAndExistAndVerified(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if !s.doesBedIdExist(req) || !s.publicKeyHasReviewed(publicKey, req.BedId) {
+		return nil, errors.New("invalid request")
+	}
+
+	res := s.db.Collection("accounts").FindOne(
+		context.Background(),
+		bson.D{{Key: "publicKey", Value: publicKey}},
+	)
+	var a account
+	res.Decode(a)
+
+	filter := bson.M{"_id": req.BedId}
+	update := bson.M{"$pull": bson.M{"reviews": bson.M{"reviewer": a.Id}}}
+	s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
+
+	return &grpc_gen.Empty{}, nil
 }
 func (s *authOnlyService) AddBed(ctx context.Context, req *grpc_gen.BedMutableInfo) (*grpc_gen.Empty, error) {
 	s.mu.Lock()
