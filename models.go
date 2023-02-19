@@ -3,6 +3,7 @@ package main
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
 type account struct {
+	Id               primitive.ObjectID   `bson:"_id"`
 	PublicKey        string               `bson:"publicKey"`
 	Name             string               `bson:"name"`
 	Mail             string               `bson:"mail"`

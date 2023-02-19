@@ -207,6 +207,39 @@ func (s *authOnlyService) isBookingValid(book *grpc_gen.Booking) bool {
 	return contained
 }
 
+func (s *authOnlyService) doesBedIdExist(bedId *grpc_gen.BedId) bool {
+	res := s.db.Collection("beds").FindOne(
+		context.Background(),
+		bson.D{{Key: "_id", Value: bedId.BedId}},
+	)
+	return res.Err() == nil
+}
+func (s *authOnlyService) getBed(bedId string) bed {
+	res := s.db.Collection("beds").FindOne(
+		context.Background(),
+		bson.D{{Key: "_id", Value: bedId}},
+	)
+	var b bed
+	res.Decode(b)
+	return b
+}
+
+func (s *authOnlyService) publicKeyHasReviewed(pubKey string, bedId string) bool {
+	b := s.getBed(bedId)
+	for _, v := range b.Reviews {
+		res := s.db.Collection("accounts").FindOne(
+			context.Background(),
+			bson.D{{Key: "_id", Value: v.Reviewer}},
+		)
+		var a account
+		res.Decode(a)
+		if a.PublicKey == pubKey {
+			return true
+		}
+	}
+	return false
+}
+
 type booking struct {
 	BedId string
 	Date  int32
