@@ -203,7 +203,19 @@ func (s *authOnlyService) DeleteAccount(ctx context.Context, req *grpc_gen.Empty
 		return nil, err
 	}
 
+	
 	filter := bson.D{{Key: "publicKey", Value: publicKey}}
+	res := s.db.Collection("accounts").FindOne(context.Background(),filter)
+
+	var host account
+	res.Decode(&host)
+
+	// Remove reviews
+	for _, id := range host.BedIdBookings {
+		s.RemoveReview(ctx, &grpc_gen.BedId{BedId: id.Hex()})
+		s.adjustAverageEvaluation(id.Hex())
+	}
+
 	_, err = s.db.Collection("accounts").DeleteOne(
 		context.Background(),
 		filter,
@@ -211,6 +223,7 @@ func (s *authOnlyService) DeleteAccount(ctx context.Context, req *grpc_gen.Empty
 	if err != nil {
 		return nil, err
 	}
+	
 	return &grpc_gen.Empty{}, nil
 }
 func (s *authOnlyService) UpdateAccountInfo(ctx context.Context, req *grpc_gen.AccountInfo) (*grpc_gen.Empty, error) {

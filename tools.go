@@ -242,12 +242,16 @@ func numDaysUntil(date *grpc_gen.Date) int {
 
 func (s *authOnlyService) adjustAverageEvaluation(bedId string) {
 	b := s.getBed(bedId)
-	sum := 0
+	sum := int32(0)
 	for _, r := range b.Reviews {
-		sum += int(r.Evaluation)
+		sum += int32(r.Evaluation)
+	}
+	var eval *int32 = nil
+	if len(b.Reviews) > 0 {
+		*eval = sum / int32(len(b.Reviews))
 	}
 
 	filter := bson.D{{Key: "_id", Value: bedId}}
-	update := bson.D{{Key: "$set", Value: bson.D{{Key: "averageEvaluation", Value: sum / len(b.Reviews)}}}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "averageEvaluation", Value: eval}}}}
 	s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
 }
