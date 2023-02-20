@@ -171,15 +171,18 @@ func (s *authOnlyService) isBookingValid(book *grpc_gen.Booking) bool {
 	var b bed
 	res.Decode(&b)
 
+	days := numDaysUntil(book.Date)
+	if days < 1 || days > int(b.MinimumDaysNotice) {
+		return false
+	}
+
 	date := flatterizeDate(book.Date)
-	contained := false
 	for _, v := range b.DateAvailables {
 		if v == date {
-			contained = true
-			break
+			return true
 		}
 	}
-	return contained
+	return false
 }
 
 func (s *authOnlyService) doesBedIdExist(bedId *grpc_gen.BedId) bool {
@@ -225,4 +228,26 @@ var restAbiJson string
 
 func isImageValid(image []byte) bool {
 	return len(image) <= 512*1024
+}
+
+func numDaysUntil(date *grpc_gen.Date) int {
+	toDate := func(d *grpc_gen.Date) time.Time {
+		return time.Date(int(d.Year), time.Month(d.Month), int(d.Day), 0, 0, 0, 0, time.Local)
+	}
+
+	tmp := time.Now()
+	now := toDate(&grpc_gen.Date{Day: uint32(tmp.Day()), Month: uint32(tmp.Month()), Year: uint32(tmp.Year())})
+	return int(toDate(date).Sub(now).Hours()) / 24
+}
+
+func (s *authOnlyService) adjustAverageEvaluation(bedId string) {
+	b := s.getBed(bedId)
+	sum := 0
+	for _, r := range b.Reviews {
+		sum += int(r.Evaluation)
+	}
+
+	filter := bson.D{{Key: "_id", Value: bedId}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "averageEvaluation", Value: sum / len(b.Reviews)}}}}
+	s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
 }

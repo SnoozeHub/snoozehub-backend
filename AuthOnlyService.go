@@ -428,8 +428,9 @@ func (s *authOnlyService) Review(ctx context.Context, req *grpc_gen.ReviewReques
 	rMarsheled, _ := bson.Marshal(r)
 	filter := bson.M{"_id": req.BedId.BedId}
 	update := bson.M{"$addToSet": bson.M{"reviews": rMarsheled}}
-
 	s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
+
+	s.adjustAverageEvaluation(req.BedId.BedId)
 
 	return &grpc_gen.Empty{}, nil
 }
@@ -487,6 +488,8 @@ func (s *authOnlyService) RemoveReview(ctx context.Context, req *grpc_gen.BedId)
 	filter := bson.M{"_id": req.BedId}
 	update := bson.M{"$pull": bson.M{"reviews": bson.M{"reviewer": a.Id}}}
 	s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
+
+	s.adjustAverageEvaluation(req.BedId)
 
 	return &grpc_gen.Empty{}, nil
 }
@@ -636,15 +639,102 @@ func (s *authOnlyService) GetMyBeds(ctx context.Context, _ *grpc_gen.Empty) (*gr
 
 	return &grpc_gen.BedList{Beds: grpcBeds}, nil
 }
-func (s *authOnlyService) AddBookingAvaiability(context.Context, *grpc_gen.Booking) (*grpc_gen.Empty, error) {
+func (s *authOnlyService) AddBookingAvailability(ctx context.Context, req *grpc_gen.Booking) (*grpc_gen.Empty, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return nil, nil
+	publicKey, err := s.authAndExistAndVerified(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// get bed
+	res := s.db.Collection("beds").FindOne(
+		context.Background(),
+		bson.D{{Key: "_id", Value: req.BedId.BedId}},
+	)
+	if res.Err() != nil {
+		return nil, errors.New("invalid bedId")
+	}
+	var b bed
+	res.Decode(&b)
+
+	// Check if the caller own the bed
+	res = s.db.Collection("accounts").FindOne(context.Background(), bson.D{{Key: "publicKey", Value: publicKey}})
+	var a account
+	res.Decode(a)
+
+	if b.Host != a.Id {
+		return nil, errors.New("caller doesn't own the bed with the specified bedId")
+	}
+
+	// Check if date is not available
+	date := flatterizeDate(req.Date)
+	for _, v := range b.DateAvailables {
+		if v == date {
+			return nil, errors.New("invalid date")
+		}
+	}
+
+	// Check date vailidty
+	days := numDaysUntil(req.Date)
+	if days < 1 || days > 90 {
+		return nil, errors.New("invalid date")
+	}
+
+	// Add availability
+	filter := bson.M{"_id": req.BedId.BedId}
+	update := bson.M{"$addToSet": bson.M{"dateAvailables": date}}
+	s.db.Collection("accounts").UpdateOne(context.Background(), filter, update)
+
+	return &grpc_gen.Empty{}, nil
 }
-func (s *authOnlyService) RemoveBookAvaiability(context.Context, *grpc_gen.Booking) (*grpc_gen.Empty, error) {
+func (s *authOnlyService) RemoveBookAvailabilityy(ctx context.Context, req *grpc_gen.Booking) (*grpc_gen.Empty, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return nil, nil
+	publicKey, err := s.authAndExistAndVerified(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// get bed
+	res := s.db.Collection("beds").FindOne(
+		context.Background(),
+		bson.D{{Key: "_id", Value: req.BedId.BedId}},
+	)
+	if res.Err() != nil {
+		return nil, errors.New("invalid bedId")
+	}
+	var b bed
+	res.Decode(&b)
+
+	// Check if the caller own the bed
+	res = s.db.Collection("accounts").FindOne(context.Background(), bson.D{{Key: "publicKey", Value: publicKey}})
+	var a account
+	res.Decode(a)
+
+	if b.Host != a.Id {
+		return nil, errors.New("caller doesn't own the bed with the specified bedId")
+	}
+
+	// Check if date is not available
+	date := flatterizeDate(req.Date)
+	contained := false
+	for _, v := range b.DateAvailables {
+		if v == date {
+			contained = true
+			break
+		}
+	}
+	if !contained {
+		return nil, errors.New("invalid date")
+	}
+
+	// Remove availability
+	filter := bson.M{"_id": req.BedId.BedId}
+	update := bson.M{"$pull": bson.M{"dateAvailables": bson.M{"$eq": date}}}
+	s.db.Collection("accounts").UpdateOne(context.Background(), filter, update)
+
+	return &grpc_gen.Empty{}, nil
 }
