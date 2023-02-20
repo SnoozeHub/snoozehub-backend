@@ -204,6 +204,50 @@ func TestRpcs(t *testing.T) {
 		assert.Nil(err)
 		assert.Condition(func() bool { return len(profilePic.Image) == 512*1024 })
 	})
+
+	t.Run("TestAddBed", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		//_, err := authOnlyService.DeleteAccount(ctx, &grpc_gen.Empty{})
+		assert = assert
+
+	})
+	t.Run("TestModifyBed", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		//_, err := authOnlyService.DeleteAccount(ctx, &grpc_gen.Empty{})
+		assert = assert
+	})
+	t.Run("TestAddAvailability", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		//_, err := authOnlyService.DeleteAccount(ctx, &grpc_gen.Empty{})
+		assert = assert
+	})
+	t.Run("TestGetMyBeds", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		//_, err := authOnlyService.DeleteAccount(ctx, &grpc_gen.Empty{})
+		assert = assert
+	})
+	t.Run("TestGetBeds", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		//_, err := authOnlyService.DeleteAccount(ctx, &grpc_gen.Empty{})
+		assert = assert
+	})
+	t.Run("TestGetBed", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		//_, err := authOnlyService.DeleteAccount(ctx, &grpc_gen.Empty{})
+		assert = assert
+	})
+	t.Run("TestRemoveAvailability", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		//_, err := authOnlyService.DeleteAccount(ctx, &grpc_gen.Empty{})
+		assert = assert
+	})
 	t.Run("TestDeleteAccount", func(t *testing.T) {
 		assert := asserter.New(t)
 
