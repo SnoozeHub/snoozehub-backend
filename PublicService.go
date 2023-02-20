@@ -88,7 +88,6 @@ func (s *publicService) GetBeds(_ context.Context, req *grpc_gen.GetBedsRequest)
 	if !allDistinct(req.FeaturesMandatory) {
 		return nil, errors.New("not distinct featuresMandatory")
 	}
-	featuresRequested := featuresToInts(req.FeaturesMandatory)
 
 	// Check if coordinates are valid
 	if req.Coordinates.Latitude < -90 || req.Coordinates.Latitude > 90 || req.Coordinates.Longitude < -180 || req.Coordinates.Latitude > 180 {
@@ -97,7 +96,7 @@ func (s *publicService) GetBeds(_ context.Context, req *grpc_gen.GetBedsRequest)
 
 	// Filter the mondadory features
 	tmp := bson.A{}
-	for _, v := range featuresRequested {
+	for _, v := range req.FeaturesMandatory {
 		tmp = append(tmp, v)
 	}
 	filter := bson.D{bson.E{Key: "features", Value: bson.M{"$all": tmp}}}
@@ -123,8 +122,8 @@ func (s *publicService) GetBeds(_ context.Context, req *grpc_gen.GetBedsRequest)
 	}
 
 	// sort beds based on coordinates
-	resSorted := make([]bed, res.RemainingBatchLength())
-	err = res.All(context.Background(), resSorted)
+	var resSorted []bed
+	err = res.All(context.Background(), &resSorted)
 	if err != nil {
 		return nil, err
 	}

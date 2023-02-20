@@ -512,27 +512,129 @@ func (s *authOnlyService) AddBed(ctx context.Context, req *grpc_gen.BedMutableIn
 		return nil, errors.New("invalid request")
 	}
 
-	publicKey = publicKey // #todo
+	// insert
 
-	return nil, nil
+	res := s.db.Collection("accounts").FindOne(
+		context.Background(),
+		bson.D{{Key: "publicKey", Value: publicKey}},
+	)
+	var a account
+	res.Decode(a)
+
+	b, _ := bson.Marshal(bed{
+		Id:                primitive.NewObjectID(),
+		Host:              a.Id,
+		Address:           req.Address,
+		Latitude:          req.Coordinates.Latitude,
+		Longitude:         req.Coordinates.Longitude,
+		Images:            req.Images,
+		Description:       req.Description,
+		Features:          req.Features,
+		MinimumDaysNotice: int32(req.MinimumDaysNotice),
+		DateAvailables:    []int32{},
+		AverageEvaluation: nil,
+		Reviews:           []review{},
+	})
+	s.db.Collection("beds").InsertOne(context.Background(), b)
+
+	return &grpc_gen.Empty{}, nil
 }
-func (s *authOnlyService) ModifyMyBed(context.Context, *grpc_gen.ModifyBedRequest) (*grpc_gen.Empty, error) {
+func (s *authOnlyService) ModifyMyBed(ctx context.Context, req *grpc_gen.ModifyBedRequest) (*grpc_gen.Empty, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return nil, nil
+	publicKey, err := s.authAndExistAndVerified(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	validImages := func(images [][]byte) bool {
+		for _, v := range images {
+			if !isImageValid(v) {
+				return false
+			}
+		}
+		return true
+	}
+
+	publicKeyOwnBed := func() bool {
+		res := s.db.Collection("accounts").FindOne(context.Background(), bson.D{{Key: "publicKey", Value: publicKey}})
+		var a account
+		res.Decode(a)
+		return a.Id == s.getBed(req.BedId.BedId).Host
+	}
+
+	if !s.doesBedIdExist(req.BedId) || !publicKeyOwnBed() || len(req.BedMutableInfo.Address) < 1 || len(req.BedMutableInfo.Address) > 100 || req.BedMutableInfo.Coordinates.Latitude < -90 || req.BedMutableInfo.Coordinates.Latitude > 90 || req.BedMutableInfo.Coordinates.Longitude < -180 || req.BedMutableInfo.Coordinates.Longitude > 180 ||
+		len(req.BedMutableInfo.Description) > 200 || !allDistinct(req.BedMutableInfo.Features) || len(req.BedMutableInfo.Images) < 1 || len(req.BedMutableInfo.Images) > 5 || validImages(req.BedMutableInfo.Images) || req.BedMutableInfo.MinimumDaysNotice < 1 || req.BedMutableInfo.MinimumDaysNotice > 30 {
+		return nil, errors.New("invalid request")
+	}
+
+	filter := bson.D{{Key: "_id", Value: req.BedId}}
+	update := bson.D{{Key: "$set", Value: bson.D{
+		{Key: "address", Value: req.BedMutableInfo.Address},
+		{Key: "latitude", Value: req.BedMutableInfo.Coordinates.Latitude},
+		{Key: "longitude", Value: req.BedMutableInfo.Coordinates.Longitude},
+		{Key: "images", Value: req.BedMutableInfo.Images},
+		{Key: "description", Value: req.BedMutableInfo.Description},
+		{Key: "features", Value: req.BedMutableInfo.Features},
+		{Key: "minimumDaysNotice", Value: req.BedMutableInfo.MinimumDaysNotice}}}}
+	s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
+
+	return &grpc_gen.Empty{}, nil
 }
-func (s *authOnlyService) RemoveMyBed(context.Context, *grpc_gen.BedId) (*grpc_gen.Empty, error) {
+func (s *authOnlyService) RemoveMyBed(ctx context.Context, req *grpc_gen.BedId) (*grpc_gen.Empty, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return nil, nil
+	publicKey, err := s.authAndExistAndVerified(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	publicKeyOwnBed := func() bool {
+		res := s.db.Collection("accounts").FindOne(context.Background(), bson.D{{Key: "publicKey", Value: publicKey}})
+		var a account
+		res.Decode(a)
+		return a.Id == s.getBed(req.BedId).Host
+	}
+
+	if !s.doesBedIdExist(req) || !publicKeyOwnBed() {
+		return nil, errors.New("invalid request")
+	}
+
+	// Remove related BedIdBookings
+	update := bson.M{"$pull": bson.M{"BedIdBookings": bson.M{"$eq": req.BedId}}}
+	s.db.Collection("accounts").UpdateMany(context.Background(), bson.M{}, update)
+
+	// Actual remove
+	filter := bson.D{{Key: "_id", Value: req.BedId}}
+	s.db.Collection("beds").DeleteOne(context.Background(), filter)
+
+	return &grpc_gen.Empty{}, nil
 }
-func (s *authOnlyService) GetMyBeds(context.Context, *grpc_gen.Empty) (*grpc_gen.BedList, error) {
+func (s *authOnlyService) GetMyBeds(ctx context.Context, _ *grpc_gen.Empty) (*grpc_gen.BedList, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return nil, nil
+	publicKey, err := s.authAndExistAndVerified(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	res := s.db.Collection("accounts").FindOne(context.Background(), bson.D{{Key: "publicKey", Value: publicKey}})
+	var a account
+	res.Decode(a)
+
+	cursor, _ := s.db.Collection("beds").Find(context.Background(), bson.D{{Key: "host", Value: a.Id}})
+
+	var beds []bed
+	cursor.All(context.Background(), &beds)
+	var grpcBeds []*grpc_gen.Bed
+	for _, b := range beds {
+		grpcBeds = append(grpcBeds, bedToGrpcBed(s.db, b))
+	}
+
+	return &grpc_gen.BedList{Beds: grpcBeds}, nil
 }
 func (s *authOnlyService) AddBookingAvaiability(context.Context, *grpc_gen.Booking) (*grpc_gen.Empty, error) {
 	s.mu.Lock()

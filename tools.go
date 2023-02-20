@@ -14,17 +14,6 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-const (
-	internetConnectionFeature = 1
-	bathroomFeature           = 2
-	heatingFeature            = 3
-	airConditionerFeature     = 4
-	electricalOutletFeature   = 5
-	tapFeature                = 6
-	bedLinensFeature          = 7
-	pillowsFeature            = 8
-)
-
 var seededRand *rand.Rand = rand.New(
 	rand.NewSource(time.Now().UnixNano()))
 
@@ -61,20 +50,6 @@ func deflatterizeDate(s int32) *grpc_gen.Date {
 		Month: uint32(m),
 		Year:  uint32(y),
 	}
-}
-func featuresToInts(s []grpc_gen.Feature) []int32 {
-	res := make([]int32, len(s))
-	for i, f := range s {
-		res[i] = int32(f)
-	}
-	return res
-}
-func intsTofeatures(s []int32) []grpc_gen.Feature {
-	res := make([]grpc_gen.Feature, len(s))
-	for i, f := range s {
-		res[i] = grpc_gen.Feature(f)
-	}
-	return res
 }
 
 func allDistinct[T comparable](s []T) bool {
@@ -116,7 +91,7 @@ func bedToGrpcBed(db *mongo.Database, b bed) *grpc_gen.Bed {
 			Coordinates:       &grpc_gen.Coordinates{Latitude: b.Latitude, Longitude: b.Longitude},
 			Images:            b.Images,
 			Description:       b.Description,
-			Features:          intsTofeatures(b.Features),
+			Features:          b.Features,
 			MinimumDaysNotice: uint32(b.MinimumDaysNotice),
 		},
 		DateAvailables:    dateAvailables,
