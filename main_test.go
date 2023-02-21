@@ -244,20 +244,84 @@ func TestRpcs(t *testing.T) {
 	t.Run("TestAddAvailability", func(t *testing.T) {
 		assert := asserter.New(t)
 
-		//_, err := authOnlyService.DeleteAccount(ctx, &grpc_gen.Empty{})
-		assert = assert
-	})
-	t.Run("TestGetMyBeds", func(t *testing.T) {
-		assert := asserter.New(t)
+		ti := time.Now()
 
-		//_, err := authOnlyService.DeleteAccount(ctx, &grpc_gen.Empty{})
-		assert = assert
+		_, err := authOnlyService.AddBookingAvailability(ctx, &grpc_gen.Booking{
+			BedId: bedId,
+			Date:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+		})
+		assert.NotNil(err)
+
+		ti = ti.Add(24 * time.Hour)
+
+		_, err = authOnlyService.AddBookingAvailability(ctx, &grpc_gen.Booking{
+			BedId: bedId,
+			Date:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+		})
+		assert.Nil(err)
+
+		ti = ti.Add(24 * 89 * time.Hour)
+
+		_, err = authOnlyService.AddBookingAvailability(ctx, &grpc_gen.Booking{
+			BedId: bedId,
+			Date:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+		})
+		assert.Nil(err)
+
+		ti = ti.Add(24 * time.Hour)
+
+		_, err = authOnlyService.AddBookingAvailability(ctx, &grpc_gen.Booking{
+			BedId: bedId,
+			Date:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+		})
+		assert.NotNil(err)
 	})
 	t.Run("TestGetBeds", func(t *testing.T) {
 		assert := asserter.New(t)
 
-		//_, err := authOnlyService.DeleteAccount(ctx, &grpc_gen.Empty{})
-		assert = assert
+		ti := time.Now()
+		ti = ti.Add(24 * time.Hour)
+
+		res, err := publicService.GetBeds(ctx, &grpc_gen.GetBedsRequest{
+			DateRangeLow:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+			DateRangeHigh: &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+			Coordinates: &grpc_gen.Coordinates{
+				Latitude:  0,
+				Longitude: 0,
+			},
+			FeaturesMandatory: []grpc_gen.Feature{grpc_gen.Feature_airConditioner},
+			FromIndex:         0,
+		})
+		assert.Nil(err)
+		assert.NotEmpty(res.Beds)
+
+		res, err = publicService.GetBeds(ctx, &grpc_gen.GetBedsRequest{
+			DateRangeLow:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+			DateRangeHigh: &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+			Coordinates: &grpc_gen.Coordinates{
+				Latitude:  0,
+				Longitude: 0,
+			},
+			FeaturesMandatory: []grpc_gen.Feature{grpc_gen.Feature_bedLinens},
+			FromIndex:         0,
+		})
+
+		assert.Nil(err)
+		assert.Empty(res.Beds)
+
+		res, err = publicService.GetBeds(ctx, &grpc_gen.GetBedsRequest{
+			DateRangeLow:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+			DateRangeHigh: &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+			Coordinates: &grpc_gen.Coordinates{
+				Latitude:  0,
+				Longitude: 0,
+			},
+			FeaturesMandatory: []grpc_gen.Feature{},
+			FromIndex:         0,
+		})
+
+		assert.Nil(err)
+		assert.NotEmpty(res.Beds)
 	})
 	t.Run("TestGetBed", func(t *testing.T) {
 		assert := asserter.New(t)

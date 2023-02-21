@@ -95,11 +95,14 @@ func (s *publicService) GetBeds(_ context.Context, req *grpc_gen.GetBedsRequest)
 	}
 
 	// Filter the mondadory features
-	tmp := bson.A{}
-	for _, v := range req.FeaturesMandatory {
-		tmp = append(tmp, v)
+	filter := bson.D{}
+	if len(req.FeaturesMandatory) > 0 {
+		tmp := bson.A{}
+		for _, v := range req.FeaturesMandatory {
+			tmp = append(tmp, v)
+		}
+		filter = append(filter, bson.E{Key: "features", Value: bson.M{"$all": tmp}})
 	}
-	filter := bson.D{bson.E{Key: "features", Value: bson.M{"$all": tmp}}}
 
 	// Filter the date range
 	if !isDateValidAndFromTomorrow(req.DateRangeLow) || !isDateValidAndFromTomorrow(req.DateRangeHigh) {
@@ -110,7 +113,7 @@ func (s *publicService) GetBeds(_ context.Context, req *grpc_gen.GetBedsRequest)
 	if dateRangeHighFlatterized < dateRangeLowFlatterized {
 		return nil, errors.New("dateRangeHigh is before dateRangeLow")
 	}
-	filter = append(filter, bson.E{Key: "dateAvailables", Value: bson.M{"$elemMatch": bson.A{bson.M{"$gte": dateRangeLowFlatterized}, bson.M{"$lte": dateRangeHighFlatterized}}}})
+	filter = append(filter, bson.E{Key: "dateAvailables", Value: bson.M{"$elemMatch": bson.M{"$gte": dateRangeLowFlatterized, "$lte": dateRangeHighFlatterized}}})
 
 	// get beds
 	res, err := s.db.Collection("beds").Find(
@@ -159,7 +162,7 @@ func (s *publicService) GetBed(_ context.Context, req *grpc_gen.BedId) (*grpc_ge
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &grpc_gen.GetBedResponse{Bed: bedToGrpcBed(s.db, currentBed)}, nil
 }
 func (s *publicService) GetReview(_ context.Context, req *grpc_gen.GetReviewsRequest) (*grpc_gen.GetReviewsResponse, error) {

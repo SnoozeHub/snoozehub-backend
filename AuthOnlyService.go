@@ -699,10 +699,9 @@ func (s *authOnlyService) AddBookingAvailability(ctx context.Context, req *grpc_
 	}
 
 	// Add availability
-	filter := bson.M{"_id": req.BedId.BedId}
+	filter := bson.M{"_id": hexToObjectId(req.BedId.BedId)}
 	update := bson.M{"$addToSet": bson.M{"dateAvailables": date}}
-	s.db.Collection("accounts").UpdateOne(context.Background(), filter, update)
-
+	s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
 	return &grpc_gen.Empty{}, nil
 }
 func (s *authOnlyService) RemoveBookAvailabilityy(ctx context.Context, req *grpc_gen.Booking) (*grpc_gen.Empty, error) {
@@ -748,7 +747,7 @@ func (s *authOnlyService) RemoveBookAvailabilityy(ctx context.Context, req *grpc
 	}
 
 	// Remove availability
-	filter := bson.M{"_id": req.BedId.BedId}
+	filter := bson.M{"_id": hexToObjectId(req.BedId.BedId)}
 	update := bson.M{"$pull": bson.M{"dateAvailables": bson.M{"$eq": date}}}
 	s.db.Collection("accounts").UpdateOne(context.Background(), filter, update)
 
