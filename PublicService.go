@@ -158,7 +158,7 @@ func (s *publicService) GetBed(_ context.Context, req *grpc_gen.BedId) (*grpc_ge
 	}
 	res.Next(context.Background())
 	var currentBed bed
-	err = bson.Unmarshal(res.Current, currentBed)
+	res.Decode(&currentBed)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (s *publicService) GetReview(_ context.Context, req *grpc_gen.GetReviewsReq
 	}
 	res.Next(context.Background())
 	var currentBed bed
-	err = bson.Unmarshal(res.Current, currentBed)
+	res.Decode(&currentBed)
 	if err != nil {
 		return nil, err
 	}

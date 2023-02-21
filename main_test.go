@@ -326,14 +326,19 @@ func TestRpcs(t *testing.T) {
 	t.Run("TestGetBed", func(t *testing.T) {
 		assert := asserter.New(t)
 
-		//_, err := authOnlyService.DeleteAccount(ctx, &grpc_gen.Empty{})
-		assert = assert
+		_, err := publicService.GetBed(ctx, bedId)
+		assert.Nil(err)
 	})
 	t.Run("TestRemoveAvailability", func(t *testing.T) {
 		assert := asserter.New(t)
 
-		//_, err := authOnlyService.DeleteAccount(ctx, &grpc_gen.Empty{})
-		assert = assert
+		ti := time.Now().Add(24 * time.Hour)
+		_, err := authOnlyService.RemoveBookAvailability(ctx,
+			&grpc_gen.Booking{
+				BedId: bedId,
+				Date:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())}})
+
+		assert.Nil(err)
 	})
 	t.Run("TestDeleteAccount", func(t *testing.T) {
 		assert := asserter.New(t)

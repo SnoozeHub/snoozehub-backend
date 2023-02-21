@@ -203,19 +203,35 @@ func (s *authOnlyService) DeleteAccount(ctx context.Context, req *grpc_gen.Empty
 		return nil, err
 	}
 
-	
 	filter := bson.D{{Key: "publicKey", Value: publicKey}}
-	res := s.db.Collection("accounts").FindOne(context.Background(),filter)
+	res := s.db.Collection("accounts").FindOne(context.Background(), filter)
 
 	var host account
 	res.Decode(&host)
 
-	// Remove reviews
+	// Remove my reviews
 	for _, id := range host.BedIdBookings {
-		s.RemoveReview(ctx, &grpc_gen.BedId{BedId: id.Hex()})
+		update := bson.M{"$pull": bson.M{"reviews": bson.M{"reviewer": host.Id}}}
+		s.db.Collection("beds").UpdateOne(context.Background(), bson.D{}, update)
+
 		s.adjustAverageEvaluation(id.Hex())
 	}
 
+	// remove my beds
+	cur, _ := s.db.Collection("beds").Find(context.Background(), bson.D{{Key: "host", Value: host.Id}})
+
+	var myBeds []bed
+	cur.All(context.Background(), &myBeds)
+
+	for _, b := range myBeds {
+		// Remove bedIdBookings of other accounts that points to b
+		s.db.Collection("accounts").UpdateMany(context.Background(), bson.M{}, bson.M{"$pull": bson.M{"bedIdBookings": bson.M{"$eq": b.Id}}})
+
+		// actual remove b
+		s.db.Collection("beds").DeleteOne(context.Background(), bson.D{{Key: "_id", Value: b.Id}})
+	}
+
+	// actually remove account
 	_, err = s.db.Collection("accounts").DeleteOne(
 		context.Background(),
 		filter,
@@ -223,7 +239,7 @@ func (s *authOnlyService) DeleteAccount(ctx context.Context, req *grpc_gen.Empty
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &grpc_gen.Empty{}, nil
 }
 func (s *authOnlyService) UpdateAccountInfo(ctx context.Context, req *grpc_gen.AccountInfo) (*grpc_gen.Empty, error) {
@@ -386,7 +402,7 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 					update := bson.M{"$addToSet": bson.M{"bedIdBookings": req.BedId.BedId}}
 					s.db.Collection("accounts").UpdateOne(context.Background(), filter, update)
 
-					filter = bson.M{"_id": req.BedId}
+					filter = bson.M{"_id": hexToObjectId(req.BedId.BedId)}
 					update = bson.M{"$pull": bson.M{"dateAvailables": bson.M{"$eq": book.Date}}}
 					s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
 
@@ -439,7 +455,7 @@ func (s *authOnlyService) Review(ctx context.Context, req *grpc_gen.ReviewReques
 		Comment:    req.Review.Comment,
 	}
 	rMarsheled, _ := bson.Marshal(r)
-	filter := bson.M{"_id": req.BedId.BedId}
+	filter := bson.M{"_id": hexToObjectId(req.BedId.BedId)}
 	update := bson.M{"$addToSet": bson.M{"reviews": rMarsheled}}
 	s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
 
@@ -498,7 +514,7 @@ func (s *authOnlyService) RemoveReview(ctx context.Context, req *grpc_gen.BedId)
 	var a account
 	res.Decode(&a)
 
-	filter := bson.M{"_id": req.BedId}
+	filter := bson.M{"_id": hexToObjectId(req.BedId)}
 	update := bson.M{"$pull": bson.M{"reviews": bson.M{"reviewer": a.Id}}}
 	s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
 
@@ -622,7 +638,7 @@ func (s *authOnlyService) RemoveMyBed(ctx context.Context, req *grpc_gen.BedId) 
 	}
 
 	// Remove related BedIdBookings
-	update := bson.M{"$pull": bson.M{"BedIdBookings": bson.M{"$eq": req.BedId}}}
+	update := bson.M{"$pull": bson.M{"bedIdBookings": bson.M{"$eq": req.BedId}}}
 	s.db.Collection("accounts").UpdateMany(context.Background(), bson.M{}, update)
 
 	// Actual remove
@@ -704,7 +720,7 @@ func (s *authOnlyService) AddBookingAvailability(ctx context.Context, req *grpc_
 	s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
 	return &grpc_gen.Empty{}, nil
 }
-func (s *authOnlyService) RemoveBookAvailabilityy(ctx context.Context, req *grpc_gen.Booking) (*grpc_gen.Empty, error) {
+func (s *authOnlyService) RemoveBookAvailability(ctx context.Context, req *grpc_gen.Booking) (*grpc_gen.Empty, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
