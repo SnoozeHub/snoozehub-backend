@@ -205,18 +205,41 @@ func TestRpcs(t *testing.T) {
 		assert.Condition(func() bool { return len(profilePic.Image) == 512*1024 })
 	})
 
-	t.Run("TestAddBed", func(t *testing.T) {
+	var bedId *grpc_gen.BedId
+
+	t.Run("TestAddBedAndGetMyBeds", func(t *testing.T) {
 		assert := asserter.New(t)
 
-		//_, err := authOnlyService.DeleteAccount(ctx, &grpc_gen.Empty{})
-		assert = assert
+		_, err := authOnlyService.AddBed(ctx, &grpc_gen.BedMutableInfo{
+			Address:           "addr",
+			Coordinates:       &grpc_gen.Coordinates{Latitude: 10, Longitude: 10},
+			Images:            [][]byte{make([]byte, 100)},
+			Description:       "descr",
+			Features:          []grpc_gen.Feature{grpc_gen.Feature_bathroom},
+			MinimumDaysNotice: 5,
+		})
+		assert.Nil(err)
 
+		bedList, err := authOnlyService.GetMyBeds(ctx, &grpc_gen.Empty{})
+		assert.Nil(err)
+
+		bedId = bedList.Beds[0].Id
 	})
 	t.Run("TestModifyBed", func(t *testing.T) {
 		assert := asserter.New(t)
 
-		//_, err := authOnlyService.DeleteAccount(ctx, &grpc_gen.Empty{})
-		assert = assert
+		_, err := authOnlyService.ModifyMyBed(ctx, &grpc_gen.ModifyBedRequest{
+			BedId: bedId,
+			BedMutableInfo: &grpc_gen.BedMutableInfo{
+				Address:           "address",
+				Coordinates:       &grpc_gen.Coordinates{Latitude: 0, Longitude: 0},
+				Images:            [][]byte{make([]byte, 1000)},
+				Description:       "description",
+				Features:          []grpc_gen.Feature{grpc_gen.Feature_airConditioner, grpc_gen.Feature_bathroom},
+				MinimumDaysNotice: 10,
+			},
+		})
+		assert.Nil(err)
 	})
 	t.Run("TestAddAvailability", func(t *testing.T) {
 		assert := asserter.New(t)

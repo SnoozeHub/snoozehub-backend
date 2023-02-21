@@ -10,6 +10,7 @@ import (
 	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
 	"github.com/badoux/checkmail"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/metadata"
 )
@@ -163,7 +164,7 @@ func (s *authOnlyService) authAndExistAndVerified(ctx context.Context) (publicKe
 func (s *authOnlyService) isBookingValid(book *grpc_gen.Booking) bool {
 	res := s.db.Collection("beds").FindOne(
 		context.Background(),
-		bson.D{{Key: "_id", Value: book.BedId.BedId}},
+		bson.D{{Key: "_id", Value: hexToObjectId(book.BedId.BedId)}},
 	)
 	if res.Err() != nil {
 		return false
@@ -188,17 +189,17 @@ func (s *authOnlyService) isBookingValid(book *grpc_gen.Booking) bool {
 func (s *authOnlyService) doesBedIdExist(bedId *grpc_gen.BedId) bool {
 	res := s.db.Collection("beds").FindOne(
 		context.Background(),
-		bson.D{{Key: "_id", Value: bedId.BedId}},
+		bson.D{{Key: "_id", Value: hexToObjectId(bedId.BedId)}},
 	)
 	return res.Err() == nil
 }
 func (s *authOnlyService) getBed(bedId string) bed {
 	res := s.db.Collection("beds").FindOne(
 		context.Background(),
-		bson.D{{Key: "_id", Value: bedId}},
+		bson.D{{Key: "_id", Value: hexToObjectId(bedId)}},
 	)
 	var b bed
-	res.Decode(b)
+	res.Decode(&b)
 	return b
 }
 
@@ -210,7 +211,7 @@ func (s *authOnlyService) publicKeyHasReviewed(pubKey string, bedId string) bool
 			bson.D{{Key: "_id", Value: v.Reviewer}},
 		)
 		var a account
-		res.Decode(a)
+		res.Decode(&a)
 		if a.PublicKey == pubKey {
 			return true
 		}
@@ -251,7 +252,12 @@ func (s *authOnlyService) adjustAverageEvaluation(bedId string) {
 		*eval = sum / int32(len(b.Reviews))
 	}
 
-	filter := bson.D{{Key: "_id", Value: bedId}}
+	filter := bson.D{{Key: "_id", Value: hexToObjectId(bedId)}}
 	update := bson.D{{Key: "$set", Value: bson.D{{Key: "averageEvaluation", Value: eval}}}}
 	s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
+}
+
+func hexToObjectId(hex string) primitive.ObjectID {
+	tmp, _ := primitive.ObjectIDFromHex(hex)
+	return tmp
 }
