@@ -4,8 +4,11 @@ import (
 	"context"
 	"log"
 	"net"
+	"time"
 
 	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
+	"github.com/go-co-op/gocron"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
@@ -31,6 +34,9 @@ func setupDb(db *mongo.Database) error {
 		}
 	*/
 	return nil
+}
+func KeepRemovingInvalidAvailabilities(db *mongo.Database) {
+
 }
 func runGrpc() error {
 	lis, err := net.Listen("tcp", ":9090")
@@ -60,6 +66,18 @@ func runGrpc() error {
 	tmp := newAuthOnlyService(db)
 	grpc_gen.RegisterPublicServiceServer(s, newPublicService(db, tmp.GetAuthTokens(), tmp.GetMutex()))
 	grpc_gen.RegisterAuthOnlyServiceServer(s, tmp)
+
+	// keep removing invalid (old) availabilities
+	scheduler := gocron.NewScheduler(time.Local)
+	scheduler.Every(1).Day().Do(func() {
+		now := time.Now()
+		todayFlat := flatterizeDate(&grpc_gen.Date{Day: uint32(now.Day()), Month: uint32(now.Month()), Year: uint32(now.Year())})
+		update := bson.M{"$pull": bson.M{"dateAvailables": bson.M{"$lte": todayFlat}}}
+		db.Collection("beds").UpdateMany(context.Background(), bson.D{}, update)
+	})
+	now := time.Now()
+	scheduler.StartAt(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())).StartAsync()
+
 	return s.Serve(lis)
 }
 func main() {

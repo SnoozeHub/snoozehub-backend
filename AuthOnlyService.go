@@ -765,7 +765,7 @@ func (s *authOnlyService) RemoveBookAvailability(ctx context.Context, req *grpc_
 	// Remove availability
 	filter := bson.M{"_id": hexToObjectId(req.BedId.BedId)}
 	update := bson.M{"$pull": bson.M{"dateAvailables": bson.M{"$eq": date}}}
-	s.db.Collection("accounts").UpdateOne(context.Background(), filter, update)
+	s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
 
 	return &grpc_gen.Empty{}, nil
 }
