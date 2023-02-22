@@ -11,8 +11,10 @@ services:
   grpc-web-proxy:
     build: 
       dockerfile: proxy.Dockerfile
+    volumes:
+      - /etc/letsencrypt:/secrets
     ports:
-      - 8080:8080
+      - 8443:8443
     depends_on:
       - grpc-server
 

@@ -2,7 +2,7 @@ We are using a proxy server for the grpc server from https://github.com/improbab
 
 ## Services:
 - grpc-server: Grpc server for backend, this is the main service for development
-- grpc-web-proxy: proxy for the grpc-server (port: 8080)
+- grpc-web-proxy: proxy for the grpc-server (port: 8443)
 - mongodb: database (port: 27017)
 - mongo-express: web interface to manage mongodb (port: 8081)
 # How to use for dev
@@ -11,13 +11,14 @@ We are using a proxy server for the grpc server from https://github.com/improbab
 3. Install reccomended tools
 4. 
     - Develop (to manage the database go to [localhost:8081](localhost:8081))
-    - Is exposed the port 8080 from grpc-web-proxy service if you want to make manual testing from an external grpc web client
+    - Is exposed the port 8443 from grpc-web-proxy service if you want to make manual testing from an external grpc web client
 # How to use for production
 Note: Currenctly there is a public key filter for demo purposes
 1. You need locally only "prod folder" and open it
 2. Sign in in the container registry
 3. Place "mailgun-sending-key.key" file in "secrets" folder
-4. Spin up "prod/docker-compose.yaml" with `docker compose up`
+4. Initialize a letsencrypt folder in /etc/letsencrypt where are store certificate and private key for grpc-web-proxy
+5. Spin up "prod/docker-compose.yaml" with `docker compose up`
 
 # Proposals
 - Implement tests for:
