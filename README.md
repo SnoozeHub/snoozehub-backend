@@ -12,13 +12,17 @@ We are using a proxy server for the grpc server from https://github.com/improbab
 4. Install reccomended tools
 5. Develop or go to [localhost:8081](localhost:8081) to manage the database
 # How to use for production
-TODO
+todo
 
-#TODO
-SetProfilePic doesn't check if it is avif
-removeAccount remove only the account itself
-non optional values are assumed that are optional, it can crash
-add check if booking is valid with MinimumDaysNotice
-
-add regex of telegram username to check also that
-add indeces in setupdb function
+# Proposals
+- Implement tests for:
+    - Book
+    - Review
+    - GetMyReview
+    - RemoveReview
+    - RemoveMyBed
+    - GetReview
+- add correct regex of telegram username
+- add indexes for database in setupdb function
+- SetProfilePic doesn't check if it is avif
+- non optional values in grpc could be nil

@@ -1,6 +1,9 @@
 package main
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type account struct {
 	Id               primitive.ObjectID   `bson:"_id"`
@@ -27,7 +30,7 @@ type bed struct {
 	Longitude         float64            `bson:"longitude"`
 	Images            [][]byte           `bson:"images"`
 	Description       string             `bson:"description"`
-	Features          []int32            `bson:"features"`
+	Features          []grpc_gen.Feature `bson:"features"`
 	MinimumDaysNotice int32              `bson:"minimumDaysNotice"`
 	DateAvailables    []int32            `bson:"dateAvailables"`
 	AverageEvaluation *int32             `bson:"averageEvaluation"`

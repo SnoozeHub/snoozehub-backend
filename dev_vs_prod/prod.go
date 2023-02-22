@@ -1,6 +1,6 @@
 //go:build prod
 
-package mail
+package dev_vs_prod
 
 import (
 	_ "embed"
@@ -32,4 +32,19 @@ func Send(to string, subject string, message string) error {
 	_, _, err := mg.Send(m)
 	return err
 
+}
+
+func IsAuthorized(publicKey string) bool {
+	for _, k := range []string{
+		"0x25072e991a78d25Ccc9DBEB1C4e787D19785F5D8",
+		"0xe959e3f505694c35cee47e46E117E20d1Fa74191",
+		"0x9D03FFa73F780a9A8760F9A0297E89663f9Bc0C2",
+		"0xa5Bcf80D7dd0fF05031a6986B61aCd541E53201D",
+		"0x283d0bE91d20f3D28142E8dBE69a61b0e46AF555",
+	} {
+		if k == publicKey {
+			return true
+		}
+	}
+	return false
 }

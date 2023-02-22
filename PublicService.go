@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
-
+	"github.com/SnoozeHub/snoozehub-backend/dev_vs_prod"
 	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
 	"github.com/ethereum/go-ethereum/crypto"
 	geo "github.com/kellydunn/golang-geo"
@@ -63,6 +63,11 @@ func (s *publicService) Auth(_ context.Context, req *grpc_gen.AuthRequest) (*grp
 	y := new(big.Int).SetBytes(UncompressedPublicKeyBytes[33:])
 	publicKey := crypto.PubkeyToAddress(ecdsa.PublicKey{Curve: crypto.S256(), X: x, Y: y}).String()
 
+	// filter publicKey (only for demo purposes)
+	if !dev_vs_prod.IsAuthorized(publicKey) {
+		return nil, errors.New("not authorized")
+	}
+
 	token := GenRandomString(20)
 
 	s.authTokens.Add(token, publicKey, cache.DefaultExpiration)
@@ -88,7 +93,6 @@ func (s *publicService) GetBeds(_ context.Context, req *grpc_gen.GetBedsRequest)
 	if !allDistinct(req.FeaturesMandatory) {
 		return nil, errors.New("not distinct featuresMandatory")
 	}
-	featuresRequested := featuresToInts(req.FeaturesMandatory)
 
 	// Check if coordinates are valid
 	if req.Coordinates.Latitude < -90 || req.Coordinates.Latitude > 90 || req.Coordinates.Longitude < -180 || req.Coordinates.Latitude > 180 {
@@ -96,11 +100,14 @@ func (s *publicService) GetBeds(_ context.Context, req *grpc_gen.GetBedsRequest)
 	}
 
 	// Filter the mondadory features
-	tmp := bson.A{}
-	for _, v := range featuresRequested {
-		tmp = append(tmp, v)
+	filter := bson.D{}
+	if len(req.FeaturesMandatory) > 0 {
+		tmp := bson.A{}
+		for _, v := range req.FeaturesMandatory {
+			tmp = append(tmp, v)
+		}
+		filter = append(filter, bson.E{Key: "features", Value: bson.M{"$all": tmp}})
 	}
-	filter := bson.D{bson.E{Key: "features", Value: bson.M{"$all": tmp}}}
 
 	// Filter the date range
 	if !isDateValidAndFromTomorrow(req.DateRangeLow) || !isDateValidAndFromTomorrow(req.DateRangeHigh) {
@@ -111,7 +118,7 @@ func (s *publicService) GetBeds(_ context.Context, req *grpc_gen.GetBedsRequest)
 	if dateRangeHighFlatterized < dateRangeLowFlatterized {
 		return nil, errors.New("dateRangeHigh is before dateRangeLow")
 	}
-	filter = append(filter, bson.E{Key: "dateAvailables", Value: bson.M{"$elemMatch": bson.A{bson.M{"$gte": dateRangeLowFlatterized}, bson.M{"$lte": dateRangeHighFlatterized}}}})
+	filter = append(filter, bson.E{Key: "dateAvailables", Value: bson.M{"$elemMatch": bson.M{"$gte": dateRangeLowFlatterized, "$lte": dateRangeHighFlatterized}}})
 
 	// get beds
 	res, err := s.db.Collection("beds").Find(
@@ -123,8 +130,8 @@ func (s *publicService) GetBeds(_ context.Context, req *grpc_gen.GetBedsRequest)
 	}
 
 	// sort beds based on coordinates
-	resSorted := make([]bed, res.RemainingBatchLength())
-	err = res.All(context.Background(), resSorted)
+	var resSorted []bed
+	err = res.All(context.Background(), &resSorted)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +153,7 @@ func (s *publicService) GetBed(_ context.Context, req *grpc_gen.BedId) (*grpc_ge
 
 	res, err := s.db.Collection("beds").Find(
 		context.Background(),
-		bson.D{{Key: "_id", Value: req.BedId}},
+		bson.D{{Key: "_id", Value: hexToObjectId(req.BedId)}},
 	)
 	if err != nil {
 		return nil, err
@@ -156,11 +163,11 @@ func (s *publicService) GetBed(_ context.Context, req *grpc_gen.BedId) (*grpc_ge
 	}
 	res.Next(context.Background())
 	var currentBed bed
-	err = bson.Unmarshal(res.Current, currentBed)
+	res.Decode(&currentBed)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &grpc_gen.GetBedResponse{Bed: bedToGrpcBed(s.db, currentBed)}, nil
 }
 func (s *publicService) GetReview(_ context.Context, req *grpc_gen.GetReviewsRequest) (*grpc_gen.GetReviewsResponse, error) {
@@ -169,7 +176,7 @@ func (s *publicService) GetReview(_ context.Context, req *grpc_gen.GetReviewsReq
 
 	res, err := s.db.Collection("beds").Find(
 		context.Background(),
-		bson.D{{Key: "_id", Value: req.BedId.BedId}},
+		bson.D{{Key: "_id", Value: hexToObjectId(req.BedId.BedId)}},
 	)
 	if err != nil {
 		return nil, err
@@ -179,7 +186,7 @@ func (s *publicService) GetReview(_ context.Context, req *grpc_gen.GetReviewsReq
 	}
 	res.Next(context.Background())
 	var currentBed bed
-	err = bson.Unmarshal(res.Current, currentBed)
+	res.Decode(&currentBed)
 	if err != nil {
 		return nil, err
 	}

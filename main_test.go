@@ -14,8 +14,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/SnoozeHub/snoozehub-backend/dev_vs_prod"
 	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
-	"github.com/SnoozeHub/snoozehub-backend/mail"
 	asserter "github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -104,9 +104,9 @@ func TestRpcs(t *testing.T) {
 		)
 		assert.Nil(err)
 
-		t.Log(mail.LatestMessage[19:])
+		t.Log(dev_vs_prod.LatestMessage[19:])
 		verifyResponse, err := authOnlyService.VerifyMail(ctx, &grpc_gen.VerifyMailRequest{
-			VerificationCode: mail.LatestMessage[19:],
+			VerificationCode: dev_vs_prod.LatestMessage[19:],
 		},
 		)
 		assert.Nil(err)
@@ -135,15 +135,15 @@ func TestRpcs(t *testing.T) {
 		)
 		assert.Nil(err)
 
-		t.Log(mail.LatestMessage[19:])
+		t.Log(dev_vs_prod.LatestMessage[19:])
 		verifyResponse, err := authOnlyService.VerifyMail(ctx, &grpc_gen.VerifyMailRequest{
-			VerificationCode: mail.LatestMessage[19:],
+			VerificationCode: dev_vs_prod.LatestMessage[19:],
 		},
 		)
 		assert.Nil(err)
 		assert.True(verifyResponse.Ok)
 		verifyResponse, err = authOnlyService.VerifyMail(ctx, &grpc_gen.VerifyMailRequest{
-			VerificationCode: mail.LatestMessage[19:],
+			VerificationCode: dev_vs_prod.LatestMessage[19:],
 		},
 		)
 		assert.Nil(err)
@@ -172,7 +172,7 @@ func TestRpcs(t *testing.T) {
 		assert.Nil(err)
 
 		verifyResponse, err := authOnlyService.VerifyMail(ctx, &grpc_gen.VerifyMailRequest{
-			VerificationCode: mail.LatestMessage[19:],
+			VerificationCode: dev_vs_prod.LatestMessage[19:],
 		},
 		)
 		assert.Nil(err)
@@ -203,6 +203,142 @@ func TestRpcs(t *testing.T) {
 		profilePic, err = authOnlyService.GetProfilePic(ctx, &grpc_gen.Empty{})
 		assert.Nil(err)
 		assert.Condition(func() bool { return len(profilePic.Image) == 512*1024 })
+	})
+
+	var bedId *grpc_gen.BedId
+
+	t.Run("TestAddBedAndGetMyBeds", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		_, err := authOnlyService.AddBed(ctx, &grpc_gen.BedMutableInfo{
+			Address:           "addr",
+			Coordinates:       &grpc_gen.Coordinates{Latitude: 10, Longitude: 10},
+			Images:            [][]byte{make([]byte, 100)},
+			Description:       "descr",
+			Features:          []grpc_gen.Feature{grpc_gen.Feature_bathroom},
+			MinimumDaysNotice: 5,
+		})
+		assert.Nil(err)
+
+		bedList, err := authOnlyService.GetMyBeds(ctx, &grpc_gen.Empty{})
+		assert.Nil(err)
+
+		bedId = bedList.Beds[0].Id
+	})
+	t.Run("TestModifyBed", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		_, err := authOnlyService.ModifyMyBed(ctx, &grpc_gen.ModifyBedRequest{
+			BedId: bedId,
+			BedMutableInfo: &grpc_gen.BedMutableInfo{
+				Address:           "address",
+				Coordinates:       &grpc_gen.Coordinates{Latitude: 0, Longitude: 0},
+				Images:            [][]byte{make([]byte, 1000)},
+				Description:       "description",
+				Features:          []grpc_gen.Feature{grpc_gen.Feature_airConditioner, grpc_gen.Feature_bathroom},
+				MinimumDaysNotice: 10,
+			},
+		})
+		assert.Nil(err)
+	})
+	t.Run("TestAddAvailability", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		ti := time.Now()
+
+		_, err := authOnlyService.AddBookingAvailability(ctx, &grpc_gen.Booking{
+			BedId: bedId,
+			Date:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+		})
+		assert.NotNil(err)
+
+		ti = ti.Add(24 * time.Hour)
+
+		_, err = authOnlyService.AddBookingAvailability(ctx, &grpc_gen.Booking{
+			BedId: bedId,
+			Date:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+		})
+		assert.Nil(err)
+
+		ti = ti.Add(24 * 89 * time.Hour)
+
+		_, err = authOnlyService.AddBookingAvailability(ctx, &grpc_gen.Booking{
+			BedId: bedId,
+			Date:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+		})
+		assert.Nil(err)
+
+		ti = ti.Add(24 * time.Hour)
+
+		_, err = authOnlyService.AddBookingAvailability(ctx, &grpc_gen.Booking{
+			BedId: bedId,
+			Date:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+		})
+		assert.NotNil(err)
+	})
+	t.Run("TestGetBeds", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		ti := time.Now()
+		ti = ti.Add(24 * time.Hour)
+
+		res, err := publicService.GetBeds(ctx, &grpc_gen.GetBedsRequest{
+			DateRangeLow:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+			DateRangeHigh: &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+			Coordinates: &grpc_gen.Coordinates{
+				Latitude:  0,
+				Longitude: 0,
+			},
+			FeaturesMandatory: []grpc_gen.Feature{grpc_gen.Feature_airConditioner},
+			FromIndex:         0,
+		})
+		assert.Nil(err)
+		assert.NotEmpty(res.Beds)
+
+		res, err = publicService.GetBeds(ctx, &grpc_gen.GetBedsRequest{
+			DateRangeLow:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+			DateRangeHigh: &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+			Coordinates: &grpc_gen.Coordinates{
+				Latitude:  0,
+				Longitude: 0,
+			},
+			FeaturesMandatory: []grpc_gen.Feature{grpc_gen.Feature_bedLinens},
+			FromIndex:         0,
+		})
+
+		assert.Nil(err)
+		assert.Empty(res.Beds)
+
+		res, err = publicService.GetBeds(ctx, &grpc_gen.GetBedsRequest{
+			DateRangeLow:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+			DateRangeHigh: &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+			Coordinates: &grpc_gen.Coordinates{
+				Latitude:  0,
+				Longitude: 0,
+			},
+			FeaturesMandatory: []grpc_gen.Feature{},
+			FromIndex:         0,
+		})
+
+		assert.Nil(err)
+		assert.NotEmpty(res.Beds)
+	})
+	t.Run("TestGetBed", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		_, err := publicService.GetBed(ctx, bedId)
+		assert.Nil(err)
+	})
+	t.Run("TestRemoveAvailability", func(t *testing.T) {
+		assert := asserter.New(t)
+
+		ti := time.Now().Add(24 * time.Hour)
+		_, err := authOnlyService.RemoveBookAvailability(ctx,
+			&grpc_gen.Booking{
+				BedId: bedId,
+				Date:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())}})
+
+		assert.Nil(err)
 	})
 	t.Run("TestDeleteAccount", func(t *testing.T) {
 		assert := asserter.New(t)

@@ -10,19 +10,9 @@ import (
 	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
 	"github.com/badoux/checkmail"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/metadata"
-)
-
-const (
-	internetConnectionFeature = 1
-	bathroomFeature           = 2
-	heatingFeature            = 3
-	airConditionerFeature     = 4
-	electricalOutletFeature   = 5
-	tapFeature                = 6
-	bedLinensFeature          = 7
-	pillowsFeature            = 8
 )
 
 var seededRand *rand.Rand = rand.New(
@@ -61,20 +51,6 @@ func deflatterizeDate(s int32) *grpc_gen.Date {
 		Month: uint32(m),
 		Year:  uint32(y),
 	}
-}
-func featuresToInts(s []grpc_gen.Feature) []int32 {
-	res := make([]int32, len(s))
-	for i, f := range s {
-		res[i] = int32(f)
-	}
-	return res
-}
-func intsTofeatures(s []int32) []grpc_gen.Feature {
-	res := make([]grpc_gen.Feature, len(s))
-	for i, f := range s {
-		res[i] = grpc_gen.Feature(f)
-	}
-	return res
 }
 
 func allDistinct[T comparable](s []T) bool {
@@ -116,7 +92,7 @@ func bedToGrpcBed(db *mongo.Database, b bed) *grpc_gen.Bed {
 			Coordinates:       &grpc_gen.Coordinates{Latitude: b.Latitude, Longitude: b.Longitude},
 			Images:            b.Images,
 			Description:       b.Description,
-			Features:          intsTofeatures(b.Features),
+			Features:          b.Features,
 			MinimumDaysNotice: uint32(b.MinimumDaysNotice),
 		},
 		DateAvailables:    dateAvailables,
@@ -188,7 +164,7 @@ func (s *authOnlyService) authAndExistAndVerified(ctx context.Context) (publicKe
 func (s *authOnlyService) isBookingValid(book *grpc_gen.Booking) bool {
 	res := s.db.Collection("beds").FindOne(
 		context.Background(),
-		bson.D{{Key: "_id", Value: book.BedId.BedId}},
+		bson.D{{Key: "_id", Value: hexToObjectId(book.BedId.BedId)}},
 	)
 	if res.Err() != nil {
 		return false
@@ -196,31 +172,34 @@ func (s *authOnlyService) isBookingValid(book *grpc_gen.Booking) bool {
 	var b bed
 	res.Decode(&b)
 
+	days := numDaysUntil(book.Date)
+	if days < 1 || days > int(b.MinimumDaysNotice) {
+		return false
+	}
+
 	date := flatterizeDate(book.Date)
-	contained := false
 	for _, v := range b.DateAvailables {
 		if v == date {
-			contained = true
-			break
+			return true
 		}
 	}
-	return contained
+	return false
 }
 
 func (s *authOnlyService) doesBedIdExist(bedId *grpc_gen.BedId) bool {
 	res := s.db.Collection("beds").FindOne(
 		context.Background(),
-		bson.D{{Key: "_id", Value: bedId.BedId}},
+		bson.D{{Key: "_id", Value: hexToObjectId(bedId.BedId)}},
 	)
 	return res.Err() == nil
 }
 func (s *authOnlyService) getBed(bedId string) bed {
 	res := s.db.Collection("beds").FindOne(
 		context.Background(),
-		bson.D{{Key: "_id", Value: bedId}},
+		bson.D{{Key: "_id", Value: hexToObjectId(bedId)}},
 	)
 	var b bed
-	res.Decode(b)
+	res.Decode(&b)
 	return b
 }
 
@@ -232,7 +211,7 @@ func (s *authOnlyService) publicKeyHasReviewed(pubKey string, bedId string) bool
 			bson.D{{Key: "_id", Value: v.Reviewer}},
 		)
 		var a account
-		res.Decode(a)
+		res.Decode(&a)
 		if a.PublicKey == pubKey {
 			return true
 		}
@@ -250,4 +229,35 @@ var restAbiJson string
 
 func isImageValid(image []byte) bool {
 	return len(image) <= 512*1024
+}
+
+func numDaysUntil(date *grpc_gen.Date) int {
+	toDate := func(d *grpc_gen.Date) time.Time {
+		return time.Date(int(d.Year), time.Month(d.Month), int(d.Day), 0, 0, 0, 0, time.Local)
+	}
+
+	tmp := time.Now()
+	now := toDate(&grpc_gen.Date{Day: uint32(tmp.Day()), Month: uint32(tmp.Month()), Year: uint32(tmp.Year())})
+	return int(toDate(date).Sub(now).Hours()) / 24
+}
+
+func (s *authOnlyService) adjustAverageEvaluation(bedId string) {
+	b := s.getBed(bedId)
+	sum := int32(0)
+	for _, r := range b.Reviews {
+		sum += int32(r.Evaluation)
+	}
+	var eval *int32 = nil
+	if len(b.Reviews) > 0 {
+		*eval = sum / int32(len(b.Reviews))
+	}
+
+	filter := bson.D{{Key: "_id", Value: hexToObjectId(bedId)}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "averageEvaluation", Value: eval}}}}
+	s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
+}
+
+func hexToObjectId(hex string) primitive.ObjectID {
+	tmp, _ := primitive.ObjectIDFromHex(hex)
+	return tmp
 }
