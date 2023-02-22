@@ -3,7 +3,7 @@ WORKDIR /app
 ADD go.mod .
 ADD go.sum .
 ADD *.go .
-ADD mail mail
+ADD dev_vs_prod dev_vs_prod
 ADD assets assets
 ADD secrets secrets
 ADD grpc_gen grpc_gen
