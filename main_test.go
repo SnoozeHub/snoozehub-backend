@@ -14,8 +14,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/SnoozeHub/snoozehub-backend/dev_vs_prod"
 	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
-	"github.com/SnoozeHub/snoozehub-backend/mail"
 	asserter "github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -104,9 +104,9 @@ func TestRpcs(t *testing.T) {
 		)
 		assert.Nil(err)
 
-		t.Log(mail.LatestMessage[19:])
+		t.Log(dev_vs_prod.LatestMessage[19:])
 		verifyResponse, err := authOnlyService.VerifyMail(ctx, &grpc_gen.VerifyMailRequest{
-			VerificationCode: mail.LatestMessage[19:],
+			VerificationCode: dev_vs_prod.LatestMessage[19:],
 		},
 		)
 		assert.Nil(err)
@@ -135,15 +135,15 @@ func TestRpcs(t *testing.T) {
 		)
 		assert.Nil(err)
 
-		t.Log(mail.LatestMessage[19:])
+		t.Log(dev_vs_prod.LatestMessage[19:])
 		verifyResponse, err := authOnlyService.VerifyMail(ctx, &grpc_gen.VerifyMailRequest{
-			VerificationCode: mail.LatestMessage[19:],
+			VerificationCode: dev_vs_prod.LatestMessage[19:],
 		},
 		)
 		assert.Nil(err)
 		assert.True(verifyResponse.Ok)
 		verifyResponse, err = authOnlyService.VerifyMail(ctx, &grpc_gen.VerifyMailRequest{
-			VerificationCode: mail.LatestMessage[19:],
+			VerificationCode: dev_vs_prod.LatestMessage[19:],
 		},
 		)
 		assert.Nil(err)
@@ -172,7 +172,7 @@ func TestRpcs(t *testing.T) {
 		assert.Nil(err)
 
 		verifyResponse, err := authOnlyService.VerifyMail(ctx, &grpc_gen.VerifyMailRequest{
-			VerificationCode: mail.LatestMessage[19:],
+			VerificationCode: dev_vs_prod.LatestMessage[19:],
 		},
 		)
 		assert.Nil(err)

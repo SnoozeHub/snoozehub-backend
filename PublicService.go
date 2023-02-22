@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
-
+	"github.com/SnoozeHub/snoozehub-backend/dev_vs_prod"
 	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
 	"github.com/ethereum/go-ethereum/crypto"
 	geo "github.com/kellydunn/golang-geo"
@@ -62,6 +62,11 @@ func (s *publicService) Auth(_ context.Context, req *grpc_gen.AuthRequest) (*grp
 	x := new(big.Int).SetBytes(UncompressedPublicKeyBytes[1:33])
 	y := new(big.Int).SetBytes(UncompressedPublicKeyBytes[33:])
 	publicKey := crypto.PubkeyToAddress(ecdsa.PublicKey{Curve: crypto.S256(), X: x, Y: y}).String()
+
+	// filter publicKey (only for demo purposes)
+	if !dev_vs_prod.IsAuthorized(publicKey) {
+		return nil, errors.New("not authorized")
+	}
 
 	token := GenRandomString(20)
 

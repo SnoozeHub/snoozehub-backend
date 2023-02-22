@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/SnoozeHub/snoozehub-backend/dev_vs_prod"
 	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
-	"github.com/SnoozeHub/snoozehub-backend/mail"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -31,7 +31,7 @@ type authOnlyService struct {
 }
 
 func newAuthOnlyService(db *mongo.Database) *authOnlyService {
-	mail.Init()
+	dev_vs_prod.Init()
 	service := authOnlyService{
 		authTokens: cache.New(24*time.Hour, 24*time.Hour),
 		db:         db,
@@ -82,7 +82,7 @@ func (s *authOnlyService) SignUp(ctx context.Context, req *grpc_gen.AccountInfo)
 		accountMarsheled,
 	)
 
-	mail.Send(req.Mail, "Verify your mail", "Verification code: "+verificationCode)
+	dev_vs_prod.Send(req.Mail, "Verify your mail", "Verification code: "+verificationCode)
 
 	return &grpc_gen.Empty{}, nil
 }
@@ -269,7 +269,7 @@ func (s *authOnlyService) UpdateAccountInfo(ctx context.Context, req *grpc_gen.A
 		tmp := GenRandomString(5)
 		verificationCode = &tmp
 
-		mail.Send(acc.Mail, "Verify your mail", "Verification code: "+*verificationCode)
+		dev_vs_prod.Send(acc.Mail, "Verify your mail", "Verification code: "+*verificationCode)
 	}
 
 	s.db.Collection("accounts").UpdateOne(
@@ -385,7 +385,7 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 						`Booking info:
 					Bed id: ` + req.BedId.BedId +
 							`Date: ` + fmt.Sprint(req.Date.Day, '/', req.Date.Month, '/', req.Date.Year)
-					mail.Send(host.Mail, "You have a new guest!", bookingInfo+"\nIn order to authenticate him, use the following snooze token: "+humanProofToken)
+					dev_vs_prod.Send(host.Mail, "You have a new guest!", bookingInfo+"\nIn order to authenticate him, use the following snooze token: "+humanProofToken)
 
 					res = s.db.Collection("accounts").FindOne(
 						context.Background(),
@@ -395,7 +395,7 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 					var guest account
 					res.Decode(&guest)
 
-					mail.Send(guest.Mail, "You have booked a bed!", bookingInfo+"\nIn order to authenticate you with the host, use the following snooze token: "+humanProofToken)
+					dev_vs_prod.Send(guest.Mail, "You have booked a bed!", bookingInfo+"\nIn order to authenticate you with the host, use the following snooze token: "+humanProofToken)
 
 					// update db
 					filter := bson.M{"PublicKey": host.PublicKey}
