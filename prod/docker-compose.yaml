@@ -4,7 +4,7 @@ services:
     image: ghcr.io/snoozehub/snoozehub-backend
     container_name: grpc-server
     volumes:
-      - ./secrets:/app
+      - ./secrets:/app/secrets
     depends_on:
       - mongodb
 
