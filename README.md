@@ -6,13 +6,18 @@ We are using a proxy server for the grpc server from https://github.com/improbab
 - mongodb: database (port: 27017)
 - mongo-express: web interface to manage mongodb (port: 8081)
 # How to use for dev
-1. Place 'mailgun-sending-key.key' file in secrets folder
-2. Open The folder in vscode
-3. Using remote container extension, select reopen in container
-4. Install reccomended tools
-5. Develop or go to [localhost:8081](localhost:8081) to manage the database
+1. Open The folder in vscode
+2. Using remote container extension, select reopen in container
+3. Install reccomended tools
+4. 
+    - Develop (to manage the database go to [localhost:8081](localhost:8081))
+    - Is exposed the port 9090 from grpc-web-proxy service if you want to make manual testing from an external grpc web client
 # How to use for production
-todo
+Note: Currenctly there is a public key filter for demo purposes
+1. You need locally only "prod folder" and open it
+2. Sign in in the container registry
+3. Place "mailgun-sending-key.key" file in "secrets" folder
+4. Spin up "prod/docker-compose.yaml" with `docker compose up`
 
 # Proposals
 - Implement tests for:
