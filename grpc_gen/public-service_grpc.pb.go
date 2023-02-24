@@ -28,7 +28,7 @@ type PublicServiceClient interface {
 	Auth(ctx context.Context, in *AuthRequest, opts ...grpc.CallOption) (*AuthResponse, error)
 	GetBeds(ctx context.Context, in *GetBedsRequest, opts ...grpc.CallOption) (*BedList, error)
 	GetBed(ctx context.Context, in *BedId, opts ...grpc.CallOption) (*GetBedResponse, error)
-	GetReview(ctx context.Context, in *GetReviewsRequest, opts ...grpc.CallOption) (*GetReviewsResponse, error)
+	GetReviews(ctx context.Context, in *GetReviewsRequest, opts ...grpc.CallOption) (*GetReviewsResponse, error)
 }
 
 type publicServiceClient struct {
@@ -75,9 +75,9 @@ func (c *publicServiceClient) GetBed(ctx context.Context, in *BedId, opts ...grp
 	return out, nil
 }
 
-func (c *publicServiceClient) GetReview(ctx context.Context, in *GetReviewsRequest, opts ...grpc.CallOption) (*GetReviewsResponse, error) {
+func (c *publicServiceClient) GetReviews(ctx context.Context, in *GetReviewsRequest, opts ...grpc.CallOption) (*GetReviewsResponse, error) {
 	out := new(GetReviewsResponse)
-	err := c.cc.Invoke(ctx, "/PublicService/GetReview", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/PublicService/GetReviews", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ type PublicServiceServer interface {
 	Auth(context.Context, *AuthRequest) (*AuthResponse, error)
 	GetBeds(context.Context, *GetBedsRequest) (*BedList, error)
 	GetBed(context.Context, *BedId) (*GetBedResponse, error)
-	GetReview(context.Context, *GetReviewsRequest) (*GetReviewsResponse, error)
+	GetReviews(context.Context, *GetReviewsRequest) (*GetReviewsResponse, error)
 	mustEmbedUnimplementedPublicServiceServer()
 }
 
@@ -114,8 +114,8 @@ func (UnimplementedPublicServiceServer) GetBeds(context.Context, *GetBedsRequest
 func (UnimplementedPublicServiceServer) GetBed(context.Context, *BedId) (*GetBedResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBed not implemented")
 }
-func (UnimplementedPublicServiceServer) GetReview(context.Context, *GetReviewsRequest) (*GetReviewsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetReview not implemented")
+func (UnimplementedPublicServiceServer) GetReviews(context.Context, *GetReviewsRequest) (*GetReviewsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetReviews not implemented")
 }
 func (UnimplementedPublicServiceServer) mustEmbedUnimplementedPublicServiceServer() {}
 
@@ -202,20 +202,20 @@ func _PublicService_GetBed_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PublicService_GetReview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _PublicService_GetReviews_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetReviewsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PublicServiceServer).GetReview(ctx, in)
+		return srv.(PublicServiceServer).GetReviews(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/PublicService/GetReview",
+		FullMethod: "/PublicService/GetReviews",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PublicServiceServer).GetReview(ctx, req.(*GetReviewsRequest))
+		return srv.(PublicServiceServer).GetReviews(ctx, req.(*GetReviewsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -244,8 +244,8 @@ var PublicService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _PublicService_GetBed_Handler,
 		},
 		{
-			MethodName: "GetReview",
-			Handler:    _PublicService_GetReview_Handler,
+			MethodName: "GetReviews",
+			Handler:    _PublicService_GetReviews_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
