@@ -23,16 +23,16 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthOnlyServiceClient interface {
 	SignUp(ctx context.Context, in *AccountInfo, opts ...grpc.CallOption) (*Empty, error)
+	// Returns ok=false also if the account is already verified
 	VerifyMail(ctx context.Context, in *VerifyMailRequest, opts ...grpc.CallOption) (*VerifyMailResponse, error)
 	GetAccountInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*AccountInfo, error)
 	GetProfilePic(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ProfilePic, error)
 	SetProfilePic(ctx context.Context, in *ProfilePic, opts ...grpc.CallOption) (*Empty, error)
-	// It also delete all his beds and booking availabilities, review to other's beds, and
+	// It also delete all his beds and booking availabilities, review to other's beds (adjusting averageEvaluation)
 	DeleteAccount(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error)
 	// If the mail is changed, is needed to verify the account (and the eventual old verification code becomed invalid), you can call this function even if
 	// the account is not verified, because for example the mail was wrong.
 	UpdateAccountInfo(ctx context.Context, in *AccountInfo, opts ...grpc.CallOption) (*Empty, error)
-	// FOR EVERY FOLLOWING RPC (TILL SERVICE LAST RPC) IS ASSUMED THAT THE CALLER HAS A VERIFIED ACCOUNT
 	// GUEST RPCs
 	// If guest can pay, he must do it within 1 minute
 	// "Human proof token" are then sent through mail to both guest, and host
@@ -217,16 +217,16 @@ func (c *authOnlyServiceClient) RemoveBookAvailability(ctx context.Context, in *
 // for forward compatibility
 type AuthOnlyServiceServer interface {
 	SignUp(context.Context, *AccountInfo) (*Empty, error)
+	// Returns ok=false also if the account is already verified
 	VerifyMail(context.Context, *VerifyMailRequest) (*VerifyMailResponse, error)
 	GetAccountInfo(context.Context, *Empty) (*AccountInfo, error)
 	GetProfilePic(context.Context, *Empty) (*ProfilePic, error)
 	SetProfilePic(context.Context, *ProfilePic) (*Empty, error)
-	// It also delete all his beds and booking availabilities, review to other's beds, and
+	// It also delete all his beds and booking availabilities, review to other's beds (adjusting averageEvaluation)
 	DeleteAccount(context.Context, *Empty) (*Empty, error)
 	// If the mail is changed, is needed to verify the account (and the eventual old verification code becomed invalid), you can call this function even if
 	// the account is not verified, because for example the mail was wrong.
 	UpdateAccountInfo(context.Context, *AccountInfo) (*Empty, error)
-	// FOR EVERY FOLLOWING RPC (TILL SERVICE LAST RPC) IS ASSUMED THAT THE CALLER HAS A VERIFIED ACCOUNT
 	// GUEST RPCs
 	// If guest can pay, he must do it within 1 minute
 	// "Human proof token" are then sent through mail to both guest, and host

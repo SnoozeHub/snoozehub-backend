@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
 	"github.com/SnoozeHub/snoozehub-backend/dev_vs_prod"
 	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -170,7 +171,7 @@ func (s *publicService) GetBed(_ context.Context, req *grpc_gen.BedId) (*grpc_ge
 
 	return &grpc_gen.GetBedResponse{Bed: bedToGrpcBed(s.db, currentBed)}, nil
 }
-func (s *publicService) GetReview(_ context.Context, req *grpc_gen.GetReviewsRequest) (*grpc_gen.GetReviewsResponse, error) {
+func (s *publicService) GetReviews(_ context.Context, req *grpc_gen.GetReviewsRequest) (*grpc_gen.GetReviewsResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
