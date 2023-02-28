@@ -237,8 +237,8 @@ type Booking struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	BedId *BedId `protobuf:"bytes,1,opt,name=bedId,proto3" json:"bedId,omitempty"`
-	Date  *Date  `protobuf:"bytes,2,opt,name=date,proto3" json:"date,omitempty"` // Refers to the night between the date and the next day
+	BedId        *BedId        `protobuf:"bytes,1,opt,name=bedId,proto3" json:"bedId,omitempty"`
+	DateInterval *DateInterval `protobuf:"bytes,2,opt,name=dateInterval,proto3" json:"dateInterval,omitempty"`
 }
 
 func (x *Booking) Reset() {
@@ -280,9 +280,64 @@ func (x *Booking) GetBedId() *BedId {
 	return nil
 }
 
-func (x *Booking) GetDate() *Date {
+func (x *Booking) GetDateInterval() *DateInterval {
 	if x != nil {
-		return x.Date
+		return x.DateInterval
+	}
+	return nil
+}
+
+type BookingAvailability struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	BedId        *BedId        `protobuf:"bytes,1,opt,name=bedId,proto3" json:"bedId,omitempty"`
+	DateInterval *DateInterval `protobuf:"bytes,2,opt,name=dateInterval,proto3" json:"dateInterval,omitempty"`
+}
+
+func (x *BookingAvailability) Reset() {
+	*x = BookingAvailability{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_common_messages_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BookingAvailability) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BookingAvailability) ProtoMessage() {}
+
+func (x *BookingAvailability) ProtoReflect() protoreflect.Message {
+	mi := &file_common_messages_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BookingAvailability.ProtoReflect.Descriptor instead.
+func (*BookingAvailability) Descriptor() ([]byte, []int) {
+	return file_common_messages_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *BookingAvailability) GetBedId() *BedId {
+	if x != nil {
+		return x.BedId
+	}
+	return nil
+}
+
+func (x *BookingAvailability) GetDateInterval() *DateInterval {
+	if x != nil {
+		return x.DateInterval
 	}
 	return nil
 }
@@ -303,7 +358,7 @@ type BedMutableInfo struct {
 func (x *BedMutableInfo) Reset() {
 	*x = BedMutableInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_common_messages_proto_msgTypes[4]
+		mi := &file_common_messages_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -316,7 +371,7 @@ func (x *BedMutableInfo) String() string {
 func (*BedMutableInfo) ProtoMessage() {}
 
 func (x *BedMutableInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_common_messages_proto_msgTypes[4]
+	mi := &file_common_messages_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -329,7 +384,7 @@ func (x *BedMutableInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BedMutableInfo.ProtoReflect.Descriptor instead.
 func (*BedMutableInfo) Descriptor() ([]byte, []int) {
-	return file_common_messages_proto_rawDescGZIP(), []int{4}
+	return file_common_messages_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *BedMutableInfo) GetAddress() string {
@@ -391,7 +446,7 @@ type Bed struct {
 func (x *Bed) Reset() {
 	*x = Bed{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_common_messages_proto_msgTypes[5]
+		mi := &file_common_messages_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -404,7 +459,7 @@ func (x *Bed) String() string {
 func (*Bed) ProtoMessage() {}
 
 func (x *Bed) ProtoReflect() protoreflect.Message {
-	mi := &file_common_messages_proto_msgTypes[5]
+	mi := &file_common_messages_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -417,7 +472,7 @@ func (x *Bed) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Bed.ProtoReflect.Descriptor instead.
 func (*Bed) Descriptor() ([]byte, []int) {
-	return file_common_messages_proto_rawDescGZIP(), []int{5}
+	return file_common_messages_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Bed) GetId() *BedId {
@@ -480,7 +535,7 @@ type BedList struct {
 func (x *BedList) Reset() {
 	*x = BedList{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_common_messages_proto_msgTypes[6]
+		mi := &file_common_messages_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -493,7 +548,7 @@ func (x *BedList) String() string {
 func (*BedList) ProtoMessage() {}
 
 func (x *BedList) ProtoReflect() protoreflect.Message {
-	mi := &file_common_messages_proto_msgTypes[6]
+	mi := &file_common_messages_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -506,7 +561,7 @@ func (x *BedList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BedList.ProtoReflect.Descriptor instead.
 func (*BedList) Descriptor() ([]byte, []int) {
-	return file_common_messages_proto_rawDescGZIP(), []int{6}
+	return file_common_messages_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *BedList) GetBeds() []*Bed {
@@ -527,7 +582,7 @@ type BedId struct {
 func (x *BedId) Reset() {
 	*x = BedId{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_common_messages_proto_msgTypes[7]
+		mi := &file_common_messages_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -540,7 +595,7 @@ func (x *BedId) String() string {
 func (*BedId) ProtoMessage() {}
 
 func (x *BedId) ProtoReflect() protoreflect.Message {
-	mi := &file_common_messages_proto_msgTypes[7]
+	mi := &file_common_messages_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -553,7 +608,7 @@ func (x *BedId) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BedId.ProtoReflect.Descriptor instead.
 func (*BedId) Descriptor() ([]byte, []int) {
-	return file_common_messages_proto_rawDescGZIP(), []int{7}
+	return file_common_messages_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *BedId) GetBedId() string {
@@ -575,7 +630,7 @@ type Review struct {
 func (x *Review) Reset() {
 	*x = Review{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_common_messages_proto_msgTypes[8]
+		mi := &file_common_messages_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -588,7 +643,7 @@ func (x *Review) String() string {
 func (*Review) ProtoMessage() {}
 
 func (x *Review) ProtoReflect() protoreflect.Message {
-	mi := &file_common_messages_proto_msgTypes[8]
+	mi := &file_common_messages_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -601,7 +656,7 @@ func (x *Review) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Review.ProtoReflect.Descriptor instead.
 func (*Review) Descriptor() ([]byte, []int) {
-	return file_common_messages_proto_rawDescGZIP(), []int{8}
+	return file_common_messages_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *Review) GetEvaluation() uint32 {
@@ -631,7 +686,7 @@ type Date struct {
 func (x *Date) Reset() {
 	*x = Date{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_common_messages_proto_msgTypes[9]
+		mi := &file_common_messages_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -644,7 +699,7 @@ func (x *Date) String() string {
 func (*Date) ProtoMessage() {}
 
 func (x *Date) ProtoReflect() protoreflect.Message {
-	mi := &file_common_messages_proto_msgTypes[9]
+	mi := &file_common_messages_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -657,7 +712,7 @@ func (x *Date) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Date.ProtoReflect.Descriptor instead.
 func (*Date) Descriptor() ([]byte, []int) {
-	return file_common_messages_proto_rawDescGZIP(), []int{9}
+	return file_common_messages_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *Date) GetDay() uint32 {
@@ -681,6 +736,61 @@ func (x *Date) GetYear() uint32 {
 	return 0
 }
 
+type DateInterval struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	StartDate *Date `protobuf:"bytes,1,opt,name=startDate,proto3" json:"startDate,omitempty"` // Refers to the night between the date and the next day. >= startDate
+	EndDate   *Date `protobuf:"bytes,2,opt,name=endDate,proto3" json:"endDate,omitempty"`     // Refers to the night between the date and the next day. >= startDate
+}
+
+func (x *DateInterval) Reset() {
+	*x = DateInterval{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_common_messages_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DateInterval) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DateInterval) ProtoMessage() {}
+
+func (x *DateInterval) ProtoReflect() protoreflect.Message {
+	mi := &file_common_messages_proto_msgTypes[11]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DateInterval.ProtoReflect.Descriptor instead.
+func (*DateInterval) Descriptor() ([]byte, []int) {
+	return file_common_messages_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *DateInterval) GetStartDate() *Date {
+	if x != nil {
+		return x.StartDate
+	}
+	return nil
+}
+
+func (x *DateInterval) GetEndDate() *Date {
+	if x != nil {
+		return x.EndDate
+	}
+	return nil
+}
+
 type Coordinates struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -693,7 +803,7 @@ type Coordinates struct {
 func (x *Coordinates) Reset() {
 	*x = Coordinates{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_common_messages_proto_msgTypes[10]
+		mi := &file_common_messages_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -706,7 +816,7 @@ func (x *Coordinates) String() string {
 func (*Coordinates) ProtoMessage() {}
 
 func (x *Coordinates) ProtoReflect() protoreflect.Message {
-	mi := &file_common_messages_proto_msgTypes[10]
+	mi := &file_common_messages_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -719,7 +829,7 @@ func (x *Coordinates) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Coordinates.ProtoReflect.Descriptor instead.
 func (*Coordinates) Descriptor() ([]byte, []int) {
-	return file_common_messages_proto_rawDescGZIP(), []int{10}
+	return file_common_messages_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *Coordinates) GetLatitude() float64 {
@@ -750,11 +860,19 @@ var file_common_messages_proto_rawDesc = []byte{
 	0x61, 0x6d, 0x65, 0x22, 0x31, 0x0a, 0x0a, 0x50, 0x72, 0x6f, 0x66, 0x69, 0x6c, 0x65, 0x50, 0x69,
 	0x63, 0x12, 0x19, 0x0a, 0x05, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c,
 	0x48, 0x00, 0x52, 0x05, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x88, 0x01, 0x01, 0x42, 0x08, 0x0a, 0x06,
-	0x5f, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x22, 0x42, 0x0a, 0x07, 0x42, 0x6f, 0x6f, 0x6b, 0x69, 0x6e,
+	0x5f, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x22, 0x5a, 0x0a, 0x07, 0x42, 0x6f, 0x6f, 0x6b, 0x69, 0x6e,
 	0x67, 0x12, 0x1c, 0x0a, 0x05, 0x62, 0x65, 0x64, 0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
 	0x32, 0x06, 0x2e, 0x42, 0x65, 0x64, 0x49, 0x64, 0x52, 0x05, 0x62, 0x65, 0x64, 0x49, 0x64, 0x12,
-	0x19, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x05, 0x2e,
-	0x44, 0x61, 0x74, 0x65, 0x52, 0x04, 0x64, 0x61, 0x74, 0x65, 0x22, 0xe8, 0x01, 0x0a, 0x0e, 0x42,
+	0x31, 0x0a, 0x0c, 0x64, 0x61, 0x74, 0x65, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x76, 0x61, 0x6c, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0d, 0x2e, 0x44, 0x61, 0x74, 0x65, 0x49, 0x6e, 0x74, 0x65,
+	0x72, 0x76, 0x61, 0x6c, 0x52, 0x0c, 0x64, 0x61, 0x74, 0x65, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x76,
+	0x61, 0x6c, 0x22, 0x66, 0x0a, 0x13, 0x42, 0x6f, 0x6f, 0x6b, 0x69, 0x6e, 0x67, 0x41, 0x76, 0x61,
+	0x69, 0x6c, 0x61, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x12, 0x1c, 0x0a, 0x05, 0x62, 0x65, 0x64,
+	0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x06, 0x2e, 0x42, 0x65, 0x64, 0x49, 0x64,
+	0x52, 0x05, 0x62, 0x65, 0x64, 0x49, 0x64, 0x12, 0x31, 0x0a, 0x0c, 0x64, 0x61, 0x74, 0x65, 0x49,
+	0x6e, 0x74, 0x65, 0x72, 0x76, 0x61, 0x6c, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0d, 0x2e,
+	0x44, 0x61, 0x74, 0x65, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x76, 0x61, 0x6c, 0x52, 0x0c, 0x64, 0x61,
+	0x74, 0x65, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x76, 0x61, 0x6c, 0x22, 0xe8, 0x01, 0x0a, 0x0e, 0x42,
 	0x65, 0x64, 0x4d, 0x75, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x18, 0x0a,
 	0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07,
 	0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x2e, 0x0a, 0x0b, 0x63, 0x6f, 0x6f, 0x72, 0x64,
@@ -802,22 +920,28 @@ var file_common_messages_proto_rawDesc = []byte{
 	0x74, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x64, 0x61, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d, 0x52,
 	0x03, 0x64, 0x61, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x6d, 0x6f, 0x6e, 0x74, 0x68, 0x18, 0x02, 0x20,
 	0x01, 0x28, 0x0d, 0x52, 0x05, 0x6d, 0x6f, 0x6e, 0x74, 0x68, 0x12, 0x12, 0x0a, 0x04, 0x79, 0x65,
-	0x61, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x04, 0x79, 0x65, 0x61, 0x72, 0x22, 0x47,
-	0x0a, 0x0b, 0x43, 0x6f, 0x6f, 0x72, 0x64, 0x69, 0x6e, 0x61, 0x74, 0x65, 0x73, 0x12, 0x1a, 0x0a,
-	0x08, 0x6c, 0x61, 0x74, 0x69, 0x74, 0x75, 0x64, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x01, 0x52,
-	0x08, 0x6c, 0x61, 0x74, 0x69, 0x74, 0x75, 0x64, 0x65, 0x12, 0x1c, 0x0a, 0x09, 0x6c, 0x6f, 0x6e,
-	0x67, 0x69, 0x74, 0x75, 0x64, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x01, 0x52, 0x09, 0x6c, 0x6f,
-	0x6e, 0x67, 0x69, 0x74, 0x75, 0x64, 0x65, 0x2a, 0x8b, 0x01, 0x0a, 0x07, 0x46, 0x65, 0x61, 0x74,
-	0x75, 0x72, 0x65, 0x12, 0x16, 0x0a, 0x12, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x65, 0x74, 0x43,
-	0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x10, 0x00, 0x12, 0x0c, 0x0a, 0x08, 0x62,
-	0x61, 0x74, 0x68, 0x72, 0x6f, 0x6f, 0x6d, 0x10, 0x01, 0x12, 0x0b, 0x0a, 0x07, 0x68, 0x65, 0x61,
-	0x74, 0x69, 0x6e, 0x67, 0x10, 0x02, 0x12, 0x12, 0x0a, 0x0e, 0x61, 0x69, 0x72, 0x43, 0x6f, 0x6e,
-	0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x65, 0x72, 0x10, 0x03, 0x12, 0x14, 0x0a, 0x10, 0x65, 0x6c,
-	0x65, 0x63, 0x74, 0x72, 0x69, 0x63, 0x61, 0x6c, 0x4f, 0x75, 0x74, 0x6c, 0x65, 0x74, 0x10, 0x04,
-	0x12, 0x07, 0x0a, 0x03, 0x74, 0x61, 0x70, 0x10, 0x05, 0x12, 0x0d, 0x0a, 0x09, 0x62, 0x65, 0x64,
-	0x4c, 0x69, 0x6e, 0x65, 0x6e, 0x73, 0x10, 0x06, 0x12, 0x0b, 0x0a, 0x07, 0x70, 0x69, 0x6c, 0x6c,
-	0x6f, 0x77, 0x73, 0x10, 0x07, 0x42, 0x0c, 0x5a, 0x0a, 0x2e, 0x2f, 0x67, 0x72, 0x70, 0x63, 0x5f,
-	0x67, 0x65, 0x6e, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x61, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x04, 0x79, 0x65, 0x61, 0x72, 0x22, 0x54,
+	0x0a, 0x0c, 0x44, 0x61, 0x74, 0x65, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x76, 0x61, 0x6c, 0x12, 0x23,
+	0x0a, 0x09, 0x73, 0x74, 0x61, 0x72, 0x74, 0x44, 0x61, 0x74, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x05, 0x2e, 0x44, 0x61, 0x74, 0x65, 0x52, 0x09, 0x73, 0x74, 0x61, 0x72, 0x74, 0x44,
+	0x61, 0x74, 0x65, 0x12, 0x1f, 0x0a, 0x07, 0x65, 0x6e, 0x64, 0x44, 0x61, 0x74, 0x65, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x05, 0x2e, 0x44, 0x61, 0x74, 0x65, 0x52, 0x07, 0x65, 0x6e, 0x64,
+	0x44, 0x61, 0x74, 0x65, 0x22, 0x47, 0x0a, 0x0b, 0x43, 0x6f, 0x6f, 0x72, 0x64, 0x69, 0x6e, 0x61,
+	0x74, 0x65, 0x73, 0x12, 0x1a, 0x0a, 0x08, 0x6c, 0x61, 0x74, 0x69, 0x74, 0x75, 0x64, 0x65, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x01, 0x52, 0x08, 0x6c, 0x61, 0x74, 0x69, 0x74, 0x75, 0x64, 0x65, 0x12,
+	0x1c, 0x0a, 0x09, 0x6c, 0x6f, 0x6e, 0x67, 0x69, 0x74, 0x75, 0x64, 0x65, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x01, 0x52, 0x09, 0x6c, 0x6f, 0x6e, 0x67, 0x69, 0x74, 0x75, 0x64, 0x65, 0x2a, 0x8b, 0x01,
+	0x0a, 0x07, 0x46, 0x65, 0x61, 0x74, 0x75, 0x72, 0x65, 0x12, 0x16, 0x0a, 0x12, 0x69, 0x6e, 0x74,
+	0x65, 0x72, 0x6e, 0x65, 0x74, 0x43, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x10,
+	0x00, 0x12, 0x0c, 0x0a, 0x08, 0x62, 0x61, 0x74, 0x68, 0x72, 0x6f, 0x6f, 0x6d, 0x10, 0x01, 0x12,
+	0x0b, 0x0a, 0x07, 0x68, 0x65, 0x61, 0x74, 0x69, 0x6e, 0x67, 0x10, 0x02, 0x12, 0x12, 0x0a, 0x0e,
+	0x61, 0x69, 0x72, 0x43, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x65, 0x72, 0x10, 0x03,
+	0x12, 0x14, 0x0a, 0x10, 0x65, 0x6c, 0x65, 0x63, 0x74, 0x72, 0x69, 0x63, 0x61, 0x6c, 0x4f, 0x75,
+	0x74, 0x6c, 0x65, 0x74, 0x10, 0x04, 0x12, 0x07, 0x0a, 0x03, 0x74, 0x61, 0x70, 0x10, 0x05, 0x12,
+	0x0d, 0x0a, 0x09, 0x62, 0x65, 0x64, 0x4c, 0x69, 0x6e, 0x65, 0x6e, 0x73, 0x10, 0x06, 0x12, 0x0b,
+	0x0a, 0x07, 0x70, 0x69, 0x6c, 0x6c, 0x6f, 0x77, 0x73, 0x10, 0x07, 0x42, 0x0c, 0x5a, 0x0a, 0x2e,
+	0x2f, 0x67, 0x72, 0x70, 0x63, 0x5f, 0x67, 0x65, 0x6e, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x33,
 }
 
 var (
@@ -833,35 +957,41 @@ func file_common_messages_proto_rawDescGZIP() []byte {
 }
 
 var file_common_messages_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_common_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_common_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_common_messages_proto_goTypes = []interface{}{
-	(Feature)(0),           // 0: Feature
-	(*Empty)(nil),          // 1: Empty
-	(*AccountInfo)(nil),    // 2: AccountInfo
-	(*ProfilePic)(nil),     // 3: ProfilePic
-	(*Booking)(nil),        // 4: Booking
-	(*BedMutableInfo)(nil), // 5: BedMutableInfo
-	(*Bed)(nil),            // 6: Bed
-	(*BedList)(nil),        // 7: BedList
-	(*BedId)(nil),          // 8: BedId
-	(*Review)(nil),         // 9: Review
-	(*Date)(nil),           // 10: Date
-	(*Coordinates)(nil),    // 11: Coordinates
+	(Feature)(0),                // 0: Feature
+	(*Empty)(nil),               // 1: Empty
+	(*AccountInfo)(nil),         // 2: AccountInfo
+	(*ProfilePic)(nil),          // 3: ProfilePic
+	(*Booking)(nil),             // 4: Booking
+	(*BookingAvailability)(nil), // 5: BookingAvailability
+	(*BedMutableInfo)(nil),      // 6: BedMutableInfo
+	(*Bed)(nil),                 // 7: Bed
+	(*BedList)(nil),             // 8: BedList
+	(*BedId)(nil),               // 9: BedId
+	(*Review)(nil),              // 10: Review
+	(*Date)(nil),                // 11: Date
+	(*DateInterval)(nil),        // 12: DateInterval
+	(*Coordinates)(nil),         // 13: Coordinates
 }
 var file_common_messages_proto_depIdxs = []int32{
-	8,  // 0: Booking.bedId:type_name -> BedId
-	10, // 1: Booking.date:type_name -> Date
-	11, // 2: BedMutableInfo.coordinates:type_name -> Coordinates
-	0,  // 3: BedMutableInfo.features:type_name -> Feature
-	8,  // 4: Bed.id:type_name -> BedId
-	5,  // 5: Bed.bedMutableInfo:type_name -> BedMutableInfo
-	10, // 6: Bed.dateAvailables:type_name -> Date
-	6,  // 7: BedList.beds:type_name -> Bed
-	8,  // [8:8] is the sub-list for method output_type
-	8,  // [8:8] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	9,  // 0: Booking.bedId:type_name -> BedId
+	12, // 1: Booking.dateInterval:type_name -> DateInterval
+	9,  // 2: BookingAvailability.bedId:type_name -> BedId
+	12, // 3: BookingAvailability.dateInterval:type_name -> DateInterval
+	13, // 4: BedMutableInfo.coordinates:type_name -> Coordinates
+	0,  // 5: BedMutableInfo.features:type_name -> Feature
+	9,  // 6: Bed.id:type_name -> BedId
+	6,  // 7: Bed.bedMutableInfo:type_name -> BedMutableInfo
+	11, // 8: Bed.dateAvailables:type_name -> Date
+	7,  // 9: BedList.beds:type_name -> Bed
+	11, // 10: DateInterval.startDate:type_name -> Date
+	11, // 11: DateInterval.endDate:type_name -> Date
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_common_messages_proto_init() }
@@ -919,7 +1049,7 @@ func file_common_messages_proto_init() {
 			}
 		}
 		file_common_messages_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BedMutableInfo); i {
+			switch v := v.(*BookingAvailability); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -931,7 +1061,7 @@ func file_common_messages_proto_init() {
 			}
 		}
 		file_common_messages_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Bed); i {
+			switch v := v.(*BedMutableInfo); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -943,7 +1073,7 @@ func file_common_messages_proto_init() {
 			}
 		}
 		file_common_messages_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BedList); i {
+			switch v := v.(*Bed); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -955,7 +1085,7 @@ func file_common_messages_proto_init() {
 			}
 		}
 		file_common_messages_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BedId); i {
+			switch v := v.(*BedList); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -967,7 +1097,7 @@ func file_common_messages_proto_init() {
 			}
 		}
 		file_common_messages_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Review); i {
+			switch v := v.(*BedId); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -979,7 +1109,7 @@ func file_common_messages_proto_init() {
 			}
 		}
 		file_common_messages_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Date); i {
+			switch v := v.(*Review); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -991,6 +1121,30 @@ func file_common_messages_proto_init() {
 			}
 		}
 		file_common_messages_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Date); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_common_messages_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DateInterval); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_common_messages_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Coordinates); i {
 			case 0:
 				return &v.state
@@ -1004,14 +1158,14 @@ func file_common_messages_proto_init() {
 		}
 	}
 	file_common_messages_proto_msgTypes[2].OneofWrappers = []interface{}{}
-	file_common_messages_proto_msgTypes[5].OneofWrappers = []interface{}{}
+	file_common_messages_proto_msgTypes[6].OneofWrappers = []interface{}{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_common_messages_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   11,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

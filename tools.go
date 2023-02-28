@@ -162,6 +162,10 @@ func (s *authOnlyService) authAndExistAndVerified(ctx context.Context) (publicKe
 }
 
 func (s *authOnlyService) isBookingValid(book *grpc_gen.Booking) bool {
+	if !isDateIntervalValid(book.DateInterval) {
+		return false
+	}
+
 	res := s.db.Collection("beds").FindOne(
 		context.Background(),
 		bson.D{{Key: "_id", Value: hexToObjectId(book.BedId.BedId)}},
@@ -172,18 +176,38 @@ func (s *authOnlyService) isBookingValid(book *grpc_gen.Booking) bool {
 	var b bed
 	res.Decode(&b)
 
-	days := numDaysUntil(book.Date)
-	if days < 1 || days > int(b.MinimumDaysNotice) {
+	days := numDaysUntil(book.DateInterval.StartDate)
+	if days < int(b.MinimumDaysNotice) {
 		return false
 	}
 
-	date := flatterizeDate(book.Date)
-	for _, v := range b.DateAvailables {
-		if v == date {
-			return true
+	for _, date := range dateIntervalToFlatSlice(book.DateInterval) {
+		for _, ava := range b.DateAvailables {
+			if date == ava {
+				goto next
+			}
 		}
+		return false
+	next:
 	}
-	return false
+
+	return true
+}
+
+func dateIntervalToFlatSlice(interval *grpc_gen.DateInterval) []int32 {
+	dates := make([]int32, 0)
+	tmp := flatterizeDate(interval.EndDate)
+	for date := flatterizeDate(interval.StartDate); date <= tmp; date++ {
+		dates = append(dates, date)
+	}
+	return dates
+}
+
+func isDateIntervalValid(interval *grpc_gen.DateInterval) bool {
+	toDate := func(d *grpc_gen.Date) time.Time {
+		return time.Date(int(d.Year), time.Month(d.Month), int(d.Day), 0, 0, 0, 0, time.Local)
+	}
+	return !toDate(interval.StartDate).After(toDate(interval.EndDate))
 }
 
 func (s *authOnlyService) doesBedIdExist(bedId *grpc_gen.BedId) bool {
@@ -231,6 +255,7 @@ func isImageValid(image []byte) bool {
 	return len(image) <= 512*1024
 }
 
+// If is a past date, returns -1
 func numDaysUntil(date *grpc_gen.Date) int {
 	toDate := func(d *grpc_gen.Date) time.Time {
 		return time.Date(int(d.Year), time.Month(d.Month), int(d.Day), 0, 0, 0, 0, time.Local)
@@ -238,6 +263,10 @@ func numDaysUntil(date *grpc_gen.Date) int {
 
 	tmp := time.Now()
 	now := toDate(&grpc_gen.Date{Day: uint32(tmp.Day()), Month: uint32(tmp.Month()), Year: uint32(tmp.Year())})
+
+	if tmp.Before(now) {
+		return -1
+	}
 	return int(toDate(date).Sub(now).Hours()) / 24
 }
 

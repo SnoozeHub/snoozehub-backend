@@ -246,33 +246,33 @@ func TestRpcs(t *testing.T) {
 
 		ti := time.Now()
 
-		_, err := authOnlyService.AddBookingAvailability(ctx, &grpc_gen.Booking{
-			BedId: bedId,
-			Date:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+		_, err := authOnlyService.AddBookingAvailability(ctx, &grpc_gen.BookingAvailability{
+			BedId:        bedId,
+			DateInterval: &grpc_gen.DateInterval{StartDate: &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())}, EndDate: &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())}},
 		})
 		assert.NotNil(err)
 
 		ti = ti.Add(24 * time.Hour)
 
-		_, err = authOnlyService.AddBookingAvailability(ctx, &grpc_gen.Booking{
-			BedId: bedId,
-			Date:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+		_, err = authOnlyService.AddBookingAvailability(ctx, &grpc_gen.BookingAvailability{
+			BedId:        bedId,
+			DateInterval: &grpc_gen.DateInterval{StartDate: &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())}, EndDate: &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())}},
 		})
 		assert.Nil(err)
 
 		ti = ti.Add(24 * 89 * time.Hour)
 
-		_, err = authOnlyService.AddBookingAvailability(ctx, &grpc_gen.Booking{
-			BedId: bedId,
-			Date:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+		_, err = authOnlyService.AddBookingAvailability(ctx, &grpc_gen.BookingAvailability{
+			BedId:        bedId,
+			DateInterval: &grpc_gen.DateInterval{StartDate: &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())}, EndDate: &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())}},
 		})
 		assert.Nil(err)
 
 		ti = ti.Add(24 * time.Hour)
 
-		_, err = authOnlyService.AddBookingAvailability(ctx, &grpc_gen.Booking{
-			BedId: bedId,
-			Date:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())},
+		_, err = authOnlyService.AddBookingAvailability(ctx, &grpc_gen.BookingAvailability{
+			BedId:        bedId,
+			DateInterval: &grpc_gen.DateInterval{StartDate: &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())}, EndDate: &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())}},
 		})
 		assert.NotNil(err)
 	})
@@ -334,9 +334,9 @@ func TestRpcs(t *testing.T) {
 
 		ti := time.Now().Add(24 * time.Hour)
 		_, err := authOnlyService.RemoveBookAvailability(ctx,
-			&grpc_gen.Booking{
-				BedId: bedId,
-				Date:  &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())}})
+			&grpc_gen.BookingAvailability{
+				BedId:        bedId,
+				DateInterval: &grpc_gen.DateInterval{StartDate: &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())}, EndDate: &grpc_gen.Date{Day: uint32(ti.Day()), Month: uint32(ti.Month()), Year: uint32(ti.Year())}}})
 
 		assert.Nil(err)
 	})
