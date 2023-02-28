@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthOnlyServiceClient interface {
 	SignUp(ctx context.Context, in *AccountInfo, opts ...grpc.CallOption) (*Empty, error)
+	Logout(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error)
 	// Returns ok=false also if the account is already verified
 	VerifyMail(ctx context.Context, in *VerifyMailRequest, opts ...grpc.CallOption) (*VerifyMailResponse, error)
 	GetAccountInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*AccountInfo, error)
@@ -41,14 +42,16 @@ type AuthOnlyServiceClient interface {
 	Review(ctx context.Context, in *ReviewRequest, opts ...grpc.CallOption) (*Empty, error)
 	// It returns the optional own review for the BedId
 	GetMyReview(ctx context.Context, in *BedId, opts ...grpc.CallOption) (*GetMyReviewResponse, error)
+	//rpc GetMyBookings(Empty) returns (BookingInfoList); // NOT GOING TO BE IMPLEMENTED
 	RemoveReview(ctx context.Context, in *BedId, opts ...grpc.CallOption) (*Empty, error)
 	// HOST RPCs
 	AddBed(ctx context.Context, in *BedMutableInfo, opts ...grpc.CallOption) (*Empty, error)
 	ModifyMyBed(ctx context.Context, in *ModifyBedRequest, opts ...grpc.CallOption) (*Empty, error)
 	RemoveMyBed(ctx context.Context, in *BedId, opts ...grpc.CallOption) (*Empty, error)
 	GetMyBeds(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*BedList, error)
-	AddBookingAvailability(ctx context.Context, in *Booking, opts ...grpc.CallOption) (*Empty, error)
-	RemoveBookAvailability(ctx context.Context, in *Booking, opts ...grpc.CallOption) (*Empty, error)
+	AddBookingAvailability(ctx context.Context, in *BookingAvailability, opts ...grpc.CallOption) (*Empty, error)
+	//rpc ModifyBookingAvailability(BookingAvailability) returns (Empty); // NOT GOING TO BE IMPLEMENTED!!
+	RemoveBookAvailability(ctx context.Context, in *BookingAvailability, opts ...grpc.CallOption) (*Empty, error)
 }
 
 type authOnlyServiceClient struct {
@@ -62,6 +65,15 @@ func NewAuthOnlyServiceClient(cc grpc.ClientConnInterface) AuthOnlyServiceClient
 func (c *authOnlyServiceClient) SignUp(ctx context.Context, in *AccountInfo, opts ...grpc.CallOption) (*Empty, error) {
 	out := new(Empty)
 	err := c.cc.Invoke(ctx, "/AuthOnlyService/SignUp", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authOnlyServiceClient) Logout(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error) {
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, "/AuthOnlyService/logout", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +206,7 @@ func (c *authOnlyServiceClient) GetMyBeds(ctx context.Context, in *Empty, opts .
 	return out, nil
 }
 
-func (c *authOnlyServiceClient) AddBookingAvailability(ctx context.Context, in *Booking, opts ...grpc.CallOption) (*Empty, error) {
+func (c *authOnlyServiceClient) AddBookingAvailability(ctx context.Context, in *BookingAvailability, opts ...grpc.CallOption) (*Empty, error) {
 	out := new(Empty)
 	err := c.cc.Invoke(ctx, "/AuthOnlyService/AddBookingAvailability", in, out, opts...)
 	if err != nil {
@@ -203,7 +215,7 @@ func (c *authOnlyServiceClient) AddBookingAvailability(ctx context.Context, in *
 	return out, nil
 }
 
-func (c *authOnlyServiceClient) RemoveBookAvailability(ctx context.Context, in *Booking, opts ...grpc.CallOption) (*Empty, error) {
+func (c *authOnlyServiceClient) RemoveBookAvailability(ctx context.Context, in *BookingAvailability, opts ...grpc.CallOption) (*Empty, error) {
 	out := new(Empty)
 	err := c.cc.Invoke(ctx, "/AuthOnlyService/RemoveBookAvailability", in, out, opts...)
 	if err != nil {
@@ -217,6 +229,7 @@ func (c *authOnlyServiceClient) RemoveBookAvailability(ctx context.Context, in *
 // for forward compatibility
 type AuthOnlyServiceServer interface {
 	SignUp(context.Context, *AccountInfo) (*Empty, error)
+	Logout(context.Context, *Empty) (*Empty, error)
 	// Returns ok=false also if the account is already verified
 	VerifyMail(context.Context, *VerifyMailRequest) (*VerifyMailResponse, error)
 	GetAccountInfo(context.Context, *Empty) (*AccountInfo, error)
@@ -235,14 +248,16 @@ type AuthOnlyServiceServer interface {
 	Review(context.Context, *ReviewRequest) (*Empty, error)
 	// It returns the optional own review for the BedId
 	GetMyReview(context.Context, *BedId) (*GetMyReviewResponse, error)
+	//rpc GetMyBookings(Empty) returns (BookingInfoList); // NOT GOING TO BE IMPLEMENTED
 	RemoveReview(context.Context, *BedId) (*Empty, error)
 	// HOST RPCs
 	AddBed(context.Context, *BedMutableInfo) (*Empty, error)
 	ModifyMyBed(context.Context, *ModifyBedRequest) (*Empty, error)
 	RemoveMyBed(context.Context, *BedId) (*Empty, error)
 	GetMyBeds(context.Context, *Empty) (*BedList, error)
-	AddBookingAvailability(context.Context, *Booking) (*Empty, error)
-	RemoveBookAvailability(context.Context, *Booking) (*Empty, error)
+	AddBookingAvailability(context.Context, *BookingAvailability) (*Empty, error)
+	//rpc ModifyBookingAvailability(BookingAvailability) returns (Empty); // NOT GOING TO BE IMPLEMENTED!!
+	RemoveBookAvailability(context.Context, *BookingAvailability) (*Empty, error)
 	mustEmbedUnimplementedAuthOnlyServiceServer()
 }
 
@@ -252,6 +267,9 @@ type UnimplementedAuthOnlyServiceServer struct {
 
 func (UnimplementedAuthOnlyServiceServer) SignUp(context.Context, *AccountInfo) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SignUp not implemented")
+}
+func (UnimplementedAuthOnlyServiceServer) Logout(context.Context, *Empty) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Logout not implemented")
 }
 func (UnimplementedAuthOnlyServiceServer) VerifyMail(context.Context, *VerifyMailRequest) (*VerifyMailResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method VerifyMail not implemented")
@@ -295,10 +313,10 @@ func (UnimplementedAuthOnlyServiceServer) RemoveMyBed(context.Context, *BedId) (
 func (UnimplementedAuthOnlyServiceServer) GetMyBeds(context.Context, *Empty) (*BedList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMyBeds not implemented")
 }
-func (UnimplementedAuthOnlyServiceServer) AddBookingAvailability(context.Context, *Booking) (*Empty, error) {
+func (UnimplementedAuthOnlyServiceServer) AddBookingAvailability(context.Context, *BookingAvailability) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddBookingAvailability not implemented")
 }
-func (UnimplementedAuthOnlyServiceServer) RemoveBookAvailability(context.Context, *Booking) (*Empty, error) {
+func (UnimplementedAuthOnlyServiceServer) RemoveBookAvailability(context.Context, *BookingAvailability) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveBookAvailability not implemented")
 }
 func (UnimplementedAuthOnlyServiceServer) mustEmbedUnimplementedAuthOnlyServiceServer() {}
@@ -328,6 +346,24 @@ func _AuthOnlyService_SignUp_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthOnlyServiceServer).SignUp(ctx, req.(*AccountInfo))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthOnlyService_Logout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthOnlyServiceServer).Logout(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/AuthOnlyService/logout",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthOnlyServiceServer).Logout(ctx, req.(*Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -585,7 +621,7 @@ func _AuthOnlyService_GetMyBeds_Handler(srv interface{}, ctx context.Context, de
 }
 
 func _AuthOnlyService_AddBookingAvailability_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Booking)
+	in := new(BookingAvailability)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -597,13 +633,13 @@ func _AuthOnlyService_AddBookingAvailability_Handler(srv interface{}, ctx contex
 		FullMethod: "/AuthOnlyService/AddBookingAvailability",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthOnlyServiceServer).AddBookingAvailability(ctx, req.(*Booking))
+		return srv.(AuthOnlyServiceServer).AddBookingAvailability(ctx, req.(*BookingAvailability))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _AuthOnlyService_RemoveBookAvailability_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Booking)
+	in := new(BookingAvailability)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -615,7 +651,7 @@ func _AuthOnlyService_RemoveBookAvailability_Handler(srv interface{}, ctx contex
 		FullMethod: "/AuthOnlyService/RemoveBookAvailability",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthOnlyServiceServer).RemoveBookAvailability(ctx, req.(*Booking))
+		return srv.(AuthOnlyServiceServer).RemoveBookAvailability(ctx, req.(*BookingAvailability))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -630,6 +666,10 @@ var AuthOnlyService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SignUp",
 			Handler:    _AuthOnlyService_SignUp_Handler,
+		},
+		{
+			MethodName: "logout",
+			Handler:    _AuthOnlyService_Logout_Handler,
 		},
 		{
 			MethodName: "VerifyMail",

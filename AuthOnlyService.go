@@ -296,23 +296,32 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 		return nil, errors.New("invalid booking")
 	}
 
-	book := booking{
-		BedId: req.BedId.BedId,
-		Date:  flatterizeDate(req.Date),
+	dates := dateIntervalToFlatSlice(req.DateInterval)
+	bookings := make([]booking, len(dates))
+	for i, v := range dates {
+		bookings[i] = booking{
+			BedId: req.BedId.BedId,
+			Date:  v,
+		}
 	}
 
-	// check if another booking is running
-	_, exist := s.attendingBookings[book]
-	if exist {
-		return &grpc_gen.BookResponse{IsBookingUnlocked: false}, nil
+	// check if another bookings is running
+	for _, book := range bookings {
+		_, exist := s.attendingBookings[book]
+		if exist {
+			return &grpc_gen.BookResponse{IsBookingUnlocked: false}, nil
+		}
 	}
 
-	s.attendingBookings[book] = true
+	// Set this bookings as running
+	for _, book := range bookings {
+		s.attendingBookings[book] = true
+	}
 
 	// get host public key
 	res := s.db.Collection("beds").FindOne(
 		context.Background(),
-		bson.D{{Key: "_id", Value: hexToObjectId(book.BedId)}},
+		bson.D{{Key: "_id", Value: hexToObjectId(bookings[0].BedId)}},
 	)
 	var b bed
 	res.Decode(&b)
@@ -358,7 +367,7 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 				to := common.BytesToAddress(log.Topics[2].Bytes()).String()
 
 				// actual check
-				if from == publicKey && to == host.PublicKey && amount.Value.Cmp(big.NewInt(1)) >= 0 {
+				if from == publicKey && to == host.PublicKey && amount.Value.Cmp(big.NewInt(1)) == len(bookings) {
 					s.mu.Lock()
 					defer s.mu.Unlock()
 
@@ -383,8 +392,9 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 					// send mails
 					bookingInfo :=
 						`Booking info:
-					Bed id: ` + req.BedId.BedId +
-							`Date: ` + fmt.Sprint(req.Date.Day, '/', req.Date.Month, '/', req.Date.Year)
+						Bed id: ` + req.BedId.BedId + `
+						Start date: ` + fmt.Sprint(req.DateInterval.StartDate.Day, '/', req.DateInterval.StartDate.Month, '/', req.DateInterval.StartDate.Year) + `
+						End date: ` + fmt.Sprint(req.DateInterval.EndDate.Day, '/', req.DateInterval.EndDate.Month, '/', req.DateInterval.EndDate.Year)
 					dev_vs_prod.Send(host.Mail, "You have a new guest!", bookingInfo+"\nIn order to authenticate him, use the following snooze token: "+humanProofToken)
 
 					res = s.db.Collection("accounts").FindOne(
@@ -403,7 +413,11 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 					s.db.Collection("accounts").UpdateOne(context.Background(), filter, update)
 
 					filter = bson.M{"_id": hexToObjectId(req.BedId.BedId)}
-					update = bson.M{"$pull": bson.M{"dateAvailables": bson.M{"$eq": book.Date}}}
+					tmp := make([]int32, 0)
+					for _, b2 := range bookings {
+						tmp = append(tmp, b2.Date)
+					}
+					update = bson.M{"$pull": bson.M{"dateAvailables": bson.M{"$in": tmp}}}
 					s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
 
 					return
@@ -671,7 +685,7 @@ func (s *authOnlyService) GetMyBeds(ctx context.Context, _ *grpc_gen.Empty) (*gr
 
 	return &grpc_gen.BedList{Beds: grpcBeds}, nil
 }
-func (s *authOnlyService) AddBookingAvailability(ctx context.Context, req *grpc_gen.Booking) (*grpc_gen.Empty, error) {
+func (s *authOnlyService) AddBookingAvailability(ctx context.Context, req *grpc_gen.BookingAvailability) (*grpc_gen.Empty, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -700,27 +714,40 @@ func (s *authOnlyService) AddBookingAvailability(ctx context.Context, req *grpc_
 		return nil, errors.New("caller doesn't own the bed with the specified bedId")
 	}
 
-	// Check if date is not available
-	date := flatterizeDate(req.Date)
-	for _, v := range b.DateAvailables {
-		if v == date {
-			return nil, errors.New("invalid date")
+	// Check if DateInterval is valid
+	if !isDateIntervalValid(req.DateInterval) {
+		return nil, errors.New("invalid date interval")
+	}
+
+	// Check if dates are not available
+	dates := dateIntervalToFlatSlice(req.DateInterval)
+	for _, date := range dates {
+		for _, ava := range b.DateAvailables {
+			if date == ava {
+				return nil, errors.New("invalid date interval")
+			}
 		}
 	}
 
-	// Check date vailidty
-	days := numDaysUntil(req.Date)
-	if days < 1 || days > 90 {
-		return nil, errors.New("invalid date")
+	// Check dates vailidty
+	days := numDaysUntil(req.DateInterval.StartDate)
+	if days < 1 {
+		return nil, errors.New("invalid date interval")
+	}
+	days = numDaysUntil(req.DateInterval.EndDate)
+	if days > 90 {
+		return nil, errors.New("invalid date interval")
 	}
 
 	// Add availability
 	filter := bson.M{"_id": hexToObjectId(req.BedId.BedId)}
-	update := bson.M{"$addToSet": bson.M{"dateAvailables": date}}
+	update := bson.M{"$addToSet": bson.M{"dateAvailables": bson.M{
+		"$each": dates,
+	}}}
 	s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
 	return &grpc_gen.Empty{}, nil
 }
-func (s *authOnlyService) RemoveBookAvailability(ctx context.Context, req *grpc_gen.Booking) (*grpc_gen.Empty, error) {
+func (s *authOnlyService) RemoveBookAvailability(ctx context.Context, req *grpc_gen.BookingAvailability) (*grpc_gen.Empty, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -749,22 +776,26 @@ func (s *authOnlyService) RemoveBookAvailability(ctx context.Context, req *grpc_
 		return nil, errors.New("caller doesn't own the bed with the specified bedId")
 	}
 
-	// Check if date is not available
-	date := flatterizeDate(req.Date)
-	contained := false
-	for _, v := range b.DateAvailables {
-		if v == date {
-			contained = true
-			break
-		}
+	// Check if DateInterval is valid
+	if !isDateIntervalValid(req.DateInterval) {
+		return nil, errors.New("invalid date interval")
 	}
-	if !contained {
+
+	// Check if date is not available
+	dates := dateIntervalToFlatSlice(req.DateInterval)
+	for _, date := range dates {
+		for _, ava := range b.DateAvailables {
+			if date == ava {
+				goto next
+			}
+		}
 		return nil, errors.New("invalid date")
+	next:
 	}
 
 	// Remove availability
 	filter := bson.M{"_id": hexToObjectId(req.BedId.BedId)}
-	update := bson.M{"$pull": bson.M{"dateAvailables": bson.M{"$eq": date}}}
+	update := bson.M{"$pull": bson.M{"dateAvailables": bson.M{"$in": dates}}}
 	s.db.Collection("beds").UpdateOne(context.Background(), filter, update)
 
 	return &grpc_gen.Empty{}, nil
