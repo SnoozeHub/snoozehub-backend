@@ -3,24 +3,10 @@ services:
   grpc-server:
     image: golang
     container_name: grpc-server
+    ports:
+      - 9090:9090
     volumes:
       - ..:/workspace
-
-  grpc-web-proxy:
-    build: .
-    ports:
-      - 8080:8080
-    depends_on:
-      - grpc-server
-  
-  envoy:
-    image: envoyproxy/envoy
-    ports:
-      - "8080:8080"
-      - "9901:9901"
-      - "9090:9090"
-    volumes:
-      - ./envoy.yaml:/etc/envoy/envoy.yaml
 
   mongodb:
     image : mongo
