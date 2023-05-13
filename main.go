@@ -6,6 +6,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/SnoozeHub/snoozehub-backend/dev_vs_prod"
 	"github.com/SnoozeHub/snoozehub-backend/grpc_gen"
 	"github.com/go-co-op/gocron"
 	"go.mongodb.org/mongo-driver/bson"
@@ -62,7 +63,14 @@ func runGrpc() error {
 		return err
 	}
 
-	s := grpc.NewServer()
+	s := grpc.NewServer(grpc.UnaryInterceptor(
+		func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+			resp, err = handler(ctx, req)
+			if err != nil {
+				dev_vs_prod.Log(err.Error())
+			}
+			return
+		}))
 	tmp := newAuthOnlyService(db)
 	grpc_gen.RegisterPublicServiceServer(s, newPublicService(db, tmp.GetAuthTokens(), tmp.GetMutex()))
 	grpc_gen.RegisterAuthOnlyServiceServer(s, tmp)
