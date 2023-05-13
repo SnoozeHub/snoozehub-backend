@@ -55,6 +55,11 @@ func (s *publicService) Auth(_ context.Context, req *grpc_gen.AuthRequest) (*grp
 	}
 
 	nonceHashed := crypto.Keccak256Hash([]byte("\x19Ethereum Signed Message:\n" + strconv.Itoa(len(req.Nonce)) + req.Nonce))
+
+	if req.SignedNonce[crypto.RecoveryIDOffset] == 27 || req.SignedNonce[crypto.RecoveryIDOffset] == 28 {
+		req.SignedNonce[crypto.RecoveryIDOffset] -= 27
+	}
+
 	UncompressedPublicKeyBytes, err := crypto.Ecrecover(nonceHashed.Bytes(), req.SignedNonce)
 	if err != nil {
 		return nil, errors.New("invalid signedNonce")
