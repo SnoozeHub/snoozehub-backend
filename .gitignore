@@ -11,6 +11,9 @@
 *.dll
 *.so
 *.dylib
+*.wt
+*.lock
+.devcontainer/db
 
 # Test binary, built with `go test -c`
 *.test
