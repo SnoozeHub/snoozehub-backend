@@ -8,19 +8,13 @@ services:
     depends_on:
       - mongodb
 
-  grpc-web-proxy:
-    build: 
-      dockerfile: proxy.Dockerfile
-    volumes:
-      - /etc/letsencrypt:/secrets
-    ports:
-      - 8443:8443
-    depends_on:
-      - grpc-server
-
   mongodb:
     image : mongo
     container_name: mongodb
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: root
+
+networks:
+  proxynet:
+    name: custom_network

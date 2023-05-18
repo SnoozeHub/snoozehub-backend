@@ -19,3 +19,7 @@ func Send(to string, subject string, message string) error {
 func IsAuthorized(publicKey string) bool {
 	return true
 }
+
+func Log(s string) {
+	log.Println(s)
+}

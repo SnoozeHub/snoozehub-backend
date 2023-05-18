@@ -48,3 +48,7 @@ func IsAuthorized(publicKey string) bool {
 	}
 	return false
 }
+
+func Log(s string) {
+
+}

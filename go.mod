@@ -1,6 +1,6 @@
 module github.com/SnoozeHub/snoozehub-backend
 
-go 1.19
+go 1.20
 
 require (
 	github.com/badoux/checkmail v1.2.1

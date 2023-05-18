@@ -1,25 +1,23 @@
-version: '3.9'
+version: "3.9"
 services:
   grpc-server:
     image: golang
     container_name: grpc-server
+    ports:
+      - 9090:9090
     volumes:
       - ..:/workspace
 
-  grpc-web-proxy:
-    build: .
-    ports:
-      - 8080:8080
-    depends_on:
-      - grpc-server
-
   mongodb:
-    image : mongo
-    container_name: mongodb
+    image: mongo
+    volumes:
+      - ./db:/data/db
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: root
-  
+    ports:
+      - 27017:27017
+
   mongo-express:
     image: mongo-express
     environment:
