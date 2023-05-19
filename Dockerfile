@@ -1,4 +1,4 @@
-FROM golang
+FROM arm64v8/golang
 WORKDIR /app
 ADD go.mod .
 ADD go.sum .
