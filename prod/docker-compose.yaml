@@ -5,21 +5,23 @@ services:
       context: ..
     container_name: grpc-server
     volumes:
-      - ./secrets:/app/secrets 
+      - ./secrets:/app/secrets
+    networks:
+      - proxynet
     depends_on:
       - mongodb
 
   mongodb:
     image : mongo
     container_name: mongodb
+    networks:
+      - proxynet
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: root
+    mongodb:
 
 networks:
   proxynet:
-
-services:
-  service1:
-    networks:
-      - proxynet
+    external: 
+      name: custom_network
