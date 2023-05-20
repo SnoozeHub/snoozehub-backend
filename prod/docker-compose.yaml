@@ -1,16 +1,15 @@
 version: '3.9'
 services:
   grpc-server:
-    image: ghcr.io/snoozehub/snoozehub-backend
-    container_name: grpc-server
+    build:
+      context: ..
     volumes:
-      - ./secrets:/app/secrets
+      - ./secrets:/app/secrets 
     depends_on:
       - mongodb
 
   mongodb:
     image : mongo
-    container_name: mongodb
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: root
