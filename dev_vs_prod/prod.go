@@ -26,7 +26,12 @@ func Init() {
 	fi, _ = file.Stat()
 	data = make([]byte, fi.Size())
 	_, _ = file.Read(data)
-	publicKeyWhitelist = strings.Split(string(data), "\n")
+	lines := strings.Split(string(data), "\n")
+ publicKeyWhitelist = make([]string, len(lines))
+for i, line := range lines {
+    publicKeyWhitelist[i] = strings.TrimRight(line, "\r\n")
+ }
+
 }
 
 func Send(to string, subject string, message string) error {
