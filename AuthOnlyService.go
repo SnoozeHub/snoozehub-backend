@@ -63,7 +63,7 @@ func (s *authOnlyService) SignUp(ctx context.Context, req *grpc_gen.AccountInfo)
 		return nil, errors.New("invalid account info")
 	}
 
-	verificationCode := GenRandomString(5)
+	//verificationCode := GenRandomString(5)
 
 	account := account{
 		Id:               primitive.NewObjectID(),
@@ -72,7 +72,7 @@ func (s *authOnlyService) SignUp(ctx context.Context, req *grpc_gen.AccountInfo)
 		Mail:             req.Mail,
 		TelegramUsername: req.TelegramUsername,
 		ProfilePic:       nil,
-		VerificationCode: &verificationCode,
+		VerificationCode: nil,
 		BedIdBookings:    []primitive.ObjectID{},
 	}
 	accountMarsheled, _ := bson.Marshal(account)
@@ -82,7 +82,7 @@ func (s *authOnlyService) SignUp(ctx context.Context, req *grpc_gen.AccountInfo)
 		accountMarsheled,
 	)
 
-	dev_vs_prod.Send(req.Mail, "Verify your mail", "Verification code: "+verificationCode)
+	dev_vs_prod.Send(req.Mail, "Verify your mail", "Verification code: ")
 
 	return &grpc_gen.Empty{}, nil
 }
