@@ -5,19 +5,28 @@ package dev_vs_prod
 import (
 	_ "embed"
 	"os"
-
+	"strings"
 	"github.com/mailgun/mailgun-go"
 )
 
 var mailgunSendindKey string
 
+var publicKeyWhitelist []string
+
 func Init() {
 	file, _ := os.Open("secrets/mailgun-sending-key.key")
-	defer file.Close()
 	fi, _ := file.Stat()
 	data := make([]byte, fi.Size())
 	_, _ = file.Read(data)
 	mailgunSendindKey = string(data)
+	file.Close()
+
+	file, _ = os.Open("secrets/whitelist.txt")
+	defer file.Close()
+	fi, _ = file.Stat()
+	data = make([]byte, fi.Size())
+	_, _ = file.Read(data)
+	publicKeyWhitelist = strings.Split(string(data), "\n")
 }
 
 func Send(to string, subject string, message string) error {
@@ -35,9 +44,7 @@ func Send(to string, subject string, message string) error {
 }
 
 func IsAuthorized(publicKey string) bool {
-	for _, k := range []string{
-		"0x25072e991a78d25Ccc9DBEB1C4e787D19785F5D8",
-	} {
+	for _, k := range publicKeyWhitelist {
 		if k == publicKey {
 			return true
 		}
