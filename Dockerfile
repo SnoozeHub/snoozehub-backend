@@ -2,7 +2,7 @@ FROM arm64v8/golang
 WORKDIR /app
 ADD go.mod .
 ADD go.sum .
-ADD *.go .
+ADD *.go ./
 ADD dev_vs_prod dev_vs_prod
 ADD assets assets
 ADD grpc_gen grpc_gen
