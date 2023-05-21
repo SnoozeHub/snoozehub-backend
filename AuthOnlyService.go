@@ -82,7 +82,7 @@ func (s *authOnlyService) SignUp(ctx context.Context, req *grpc_gen.AccountInfo)
 		accountMarsheled,
 	)
 
-	dev_vs_prod.Send(req.Mail, "Verify your mail", "Verification code: ")
+	dev_vs_prod.Send(req.Mail, "Verify your mail", "Verification code: "+"(plot twist: you are already verified because this is the staging server)")
 
 	return &grpc_gen.Empty{}, nil
 }
