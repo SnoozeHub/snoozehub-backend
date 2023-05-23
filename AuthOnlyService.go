@@ -283,6 +283,10 @@ func (s *authOnlyService) UpdateAccountInfo(ctx context.Context, req *grpc_gen.A
 
 	return &grpc_gen.Empty{}, nil
 }
+func (s *authOnlyService) Logout(ctx context.Context, empt *grpc_gen.Empty) (*grpc_gen.Empty, error) {
+	return nil, nil
+}
+
 func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grpc_gen.BookResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
