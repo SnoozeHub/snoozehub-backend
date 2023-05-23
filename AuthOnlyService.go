@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"math/big"
 	"strings"
 	"sync"
@@ -284,8 +283,7 @@ func (s *authOnlyService) UpdateAccountInfo(ctx context.Context, req *grpc_gen.A
 
 	return &grpc_gen.Empty{}, nil
 }
-func (s *authOnlyService) Logout(ctx context.Context, empt *grpc_gen.Empty) (*grpc_gen.Empty, error){
-	log.Println("logged out");
+func (s *authOnlyService) Logout(ctx context.Context, empt *grpc_gen.Empty) (*grpc_gen.Empty, error) {
 	return nil, nil
 }
 
