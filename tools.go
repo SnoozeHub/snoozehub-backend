@@ -66,7 +66,7 @@ func allDistinct[T comparable](s []T) bool {
 }
 
 func bedToGrpcBed(db *mongo.Database, b bed) *grpc_gen.Bed {
-	dateAvailables := make([]*grpc_gen.Date, len(b.DateAvailables))
+	dateAvailables := make([]*grpc_gen.Date, 0, len(b.DateAvailables))
 	for _, v := range b.DateAvailables {
 		dateAvailables = append(dateAvailables, deflatterizeDate(v))
 	}
