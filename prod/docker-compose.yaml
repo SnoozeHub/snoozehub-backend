@@ -13,6 +13,8 @@ services:
 
   mongodb:
     image : mongo
+    volumes:
+      - ./db:/data/db
     container_name: mongodb
     networks:
       - proxynet
