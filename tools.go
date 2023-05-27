@@ -51,7 +51,7 @@ func deflatterizeDate(s int32) *grpc_gen.Date {
 	}
 }
 func grpcDateToTime(d *grpc_gen.Date) *time.Time {
-	grpcDateAsTime := time.Date(int(d.Year), time.Month(d.Month), int(d.Day), 0, 0, 0, 0, time.UTC)
+	grpcDateAsTime := time.Date(int(d.Year), time.Month(d.Month), int(d.Day), 0, 0, 0, 0, time.Local)
 	return &grpcDateAsTime
 }
 
