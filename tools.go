@@ -51,15 +51,15 @@ func deflatterizeDate(s int32) *grpc_gen.Date {
 	}
 }
 func grpcDateToTime(d *grpc_gen.Date) *time.Time {
-	grpcDateAsTime := time.Date(int(d.Year), time.Month(d.Month), int(d.Day),0 ,0,0,0,time.UTC);
-	return &grpcDateAsTime;
+	grpcDateAsTime := time.Date(int(d.Year), time.Month(d.Month), int(d.Day), 0, 0, 0, 0, time.UTC)
+	return &grpcDateAsTime
 }
 
-func timeToGrpcDate(d* time.Time) *grpc_gen.Date {
+func timeToGrpcDate(d *time.Time) *grpc_gen.Date {
 	return &grpc_gen.Date{
-		Day: uint32(d.Day()),
+		Day:   uint32(d.Day()),
 		Month: uint32(d.Month()),
-		Year: uint32(d.Year()),
+		Year:  uint32(d.Year()),
 	}
 }
 
@@ -194,7 +194,7 @@ func (s *authOnlyService) isBookingValid(book *grpc_gen.Booking) bool {
 	for _, date := range dateIntervalToDateSlice(book.DateInterval) {
 		for _, ava := range b.DateAvailables {
 			avaAsDate := grpcDateToTime(deflatterizeDate(ava))
-			if datesAreSameDay(&date, avaAsDate){
+			if datesAreSameDay(&date, avaAsDate) {
 				goto next
 			}
 		}
@@ -211,9 +211,9 @@ func datesAreSameDay(d1 *time.Time, d2 *time.Time) bool {
 
 func dateIntervalToDateSlice(interval *grpc_gen.DateInterval) []time.Time {
 	dates := make([]time.Time, 0)
-	start := grpcDateToTime(interval.StartDate);
-	end := grpcDateToTime(interval.EndDate);
-	for  date := start; date.Before(*end) || date.Equal(*end); *date = (*date).Add(time.Hour * 24) {
+	start := grpcDateToTime(interval.StartDate)
+	end := grpcDateToTime(interval.EndDate)
+	for date := start; date.Before(*end) || date.Equal(*end); *date = (*date).Add(time.Hour * 24) {
 		dates = append(dates, *date)
 	}
 	return dates
@@ -221,14 +221,14 @@ func dateIntervalToDateSlice(interval *grpc_gen.DateInterval) []time.Time {
 
 func dateSliceToFlatSlice(dateSlice []time.Time) []int32 {
 	dates := make([]int32, 0, len(dateSlice))
-	for  _, elm := range dateSlice {
+	for _, elm := range dateSlice {
 		dates = append(dates, flatterizeDate(timeToGrpcDate(&elm)))
 	}
-	return dates;
+	return dates
 }
 
 func isDateIntervalValid(interval *grpc_gen.DateInterval) bool {
-	return grpcDateToTime(interval.StartDate).Before(*grpcDateToTime(interval.EndDate))
+	return !grpcDateToTime(interval.StartDate).After(*grpcDateToTime(interval.EndDate))
 }
 
 func (s *authOnlyService) doesBedIdExist(bedId *grpc_gen.BedId) bool {
@@ -280,7 +280,8 @@ func isImageValid(image []byte) bool {
 func numDaysUntil(date *grpc_gen.Date) int {
 	grpcDateAsDate := grpcDateToTime(date)
 
-	now := time.Now()
+	tmp := time.Now()
+	now := *grpcDateToTime(&grpc_gen.Date{Day: uint32(tmp.Day()), Month: uint32(tmp.Month()), Year: uint32(tmp.Year())})
 
 	if grpcDateAsDate.Before(now) {
 		return -1
