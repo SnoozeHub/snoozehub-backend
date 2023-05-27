@@ -196,9 +196,10 @@ func (s *authOnlyService) isBookingValid(book *grpc_gen.Booking) bool {
 
 func dateIntervalToFlatSlice(interval *grpc_gen.DateInterval) []int32 {
 	dates := make([]int32, 0)
-	tmp := flatterizeDate(interval.EndDate)
-	for date := flatterizeDate(interval.StartDate); date <= tmp; date++ {
-		dates = append(dates, date)
+	start := time.Date(int(interval.StartDate.Year), time.Month(interval.StartDate.Month), int(interval.StartDate.Day), 0, 0, 0, 0, time.Local)
+	end := time.Date(int(interval.EndDate.Year), time.Month(interval.EndDate.Month), int(interval.EndDate.Day), 0, 0, 0, 0, time.Local)
+	for date := start; date.Before(end) || date.Equal(end); date = date.Add(time.Hour * 24) {
+		dates = append(dates, flatterizeDate(&grpc_gen.Date{Day: uint32(date.Day()), Month: uint32(date.Month()), Year: uint32(date.Year())}))
 	}
 	return dates
 }
