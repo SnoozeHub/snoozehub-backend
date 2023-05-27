@@ -733,7 +733,7 @@ func (s *authOnlyService) AddBookingAvailability(ctx context.Context, req *grpc_
 			}
 		}
 	}
-	dates := dateSliceToFlatSlice(datesSlice);
+	dates := dateSliceToFlatSlice(datesSlice)
 	// Check dates vailidty
 	days := numDaysUntil(req.DateInterval.StartDate)
 	if days < 1 {
@@ -791,7 +791,7 @@ func (s *authOnlyService) RemoveBookAvailability(ctx context.Context, req *grpc_
 	for _, date := range datesSlice {
 		for _, ava := range b.DateAvailables {
 			avaAsDate := grpcDateToTime(deflatterizeDate(ava))
-			if datesAreSameDay(&date, avaAsDate){
+			if datesAreSameDay(&date, avaAsDate) {
 				goto next
 			}
 		}
