@@ -300,12 +300,12 @@ func (s *authOnlyService) Book(ctx context.Context, req *grpc_gen.Booking) (*grp
 		return nil, errors.New("invalid booking")
 	}
 
-	dates := dateIntervalToFlatSlice(req.DateInterval)
+	dates := dateIntervalToDateSlice(req.DateInterval)
 	bookings := make([]booking, len(dates))
 	for i, v := range dates {
 		bookings[i] = booking{
 			BedId: req.BedId.BedId,
-			Date:  v,
+			Date:  flatterizeDate(timeToGrpcDate(&v)),
 		}
 	}
 
@@ -724,15 +724,16 @@ func (s *authOnlyService) AddBookingAvailability(ctx context.Context, req *grpc_
 	}
 
 	// Check if dates are not available
-	dates := dateIntervalToFlatSlice(req.DateInterval)
-	for _, date := range dates {
+	datesSlice := dateIntervalToDateSlice(req.DateInterval)
+	for _, date := range datesSlice {
 		for _, ava := range b.DateAvailables {
-			if date == ava {
+			avaAsDate := grpcDateToTime(deflatterizeDate(ava))
+			if datesAreSameDay(&date, avaAsDate) {
 				return nil, errors.New("invalid date interval")
 			}
 		}
 	}
-
+	dates := dateSliceToFlatSlice(datesSlice)
 	// Check dates vailidty
 	days := numDaysUntil(req.DateInterval.StartDate)
 	if days < 1 {
@@ -786,16 +787,18 @@ func (s *authOnlyService) RemoveBookAvailability(ctx context.Context, req *grpc_
 	}
 
 	// Check if date is not available
-	dates := dateIntervalToFlatSlice(req.DateInterval)
-	for _, date := range dates {
+	datesSlice := dateIntervalToDateSlice(req.DateInterval)
+	for _, date := range datesSlice {
 		for _, ava := range b.DateAvailables {
-			if date == ava {
+			avaAsDate := grpcDateToTime(deflatterizeDate(ava))
+			if datesAreSameDay(&date, avaAsDate) {
 				goto next
 			}
 		}
 		return nil, errors.New("invalid date")
 	next:
 	}
+	dates := dateSliceToFlatSlice(datesSlice)
 
 	// Remove availability
 	filter := bson.M{"_id": hexToObjectId(req.BedId.BedId)}

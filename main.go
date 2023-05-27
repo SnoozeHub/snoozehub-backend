@@ -76,15 +76,15 @@ func runGrpc() error {
 	grpc_gen.RegisterAuthOnlyServiceServer(s, tmp)
 
 	// keep removing invalid (old) availabilities
-	scheduler := gocron.NewScheduler(time.Local)
+	scheduler := gocron.NewScheduler(time.UTC)
 	scheduler.Every(1).Day().Do(func() {
 		now := time.Now()
-		todayFlat := flatterizeDate(&grpc_gen.Date{Day: uint32(now.Day()), Month: uint32(now.Month()), Year: uint32(now.Year())})
+		todayFlat := flatterizeDate(timeToGrpcDate(&now))
 		update := bson.M{"$pull": bson.M{"dateAvailables": bson.M{"$lte": todayFlat}}}
 		db.Collection("beds").UpdateMany(context.Background(), bson.D{}, update)
 	})
 	now := time.Now()
-	scheduler.StartAt(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())).StartAsync()
+	scheduler.StartAt(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)).StartAsync()
 
 	return s.Serve(lis)
 }

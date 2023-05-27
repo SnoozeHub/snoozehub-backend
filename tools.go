@@ -31,11 +31,9 @@ func isDateValidAndFromTomorrow(d *grpc_gen.Date) bool {
 	if d.Year < 1000 && d.Year >= 3000 && d.Month < 1 && d.Month > 12 && d.Day < 1 && d.Day > 31 {
 		return false
 	}
-	date := time.Date(int(d.Year), time.Month(d.Month), int(d.Day), 0, 0, 0, 0, time.Local)
-	if date.Year() != int(d.Year) || int(date.Month()) != int(d.Month) || date.Day() != int(d.Day) {
-		return false
-	}
-	return time.Now().Before(date)
+	date := grpcDateToTime(d)
+	now := time.Now()
+	return now.Before(*date) && !datesAreSameDay(&now, date)
 }
 
 // Assumed that isDateValidAndFromTomorrow(d) is true
@@ -50,6 +48,18 @@ func deflatterizeDate(s int32) *grpc_gen.Date {
 		Day:   uint32(d),
 		Month: uint32(m),
 		Year:  uint32(y),
+	}
+}
+func grpcDateToTime(d *grpc_gen.Date) *time.Time {
+	grpcDateAsTime := time.Date(int(d.Year), time.Month(d.Month), int(d.Day), 0, 0, 0, 0, time.UTC)
+	return &grpcDateAsTime
+}
+
+func timeToGrpcDate(d *time.Time) *grpc_gen.Date {
+	return &grpc_gen.Date{
+		Day:   uint32(d.Day()),
+		Month: uint32(d.Month()),
+		Year:  uint32(d.Year()),
 	}
 }
 
@@ -181,9 +191,10 @@ func (s *authOnlyService) isBookingValid(book *grpc_gen.Booking) bool {
 		return false
 	}
 
-	for _, date := range dateIntervalToFlatSlice(book.DateInterval) {
+	for _, date := range dateIntervalToDateSlice(book.DateInterval) {
 		for _, ava := range b.DateAvailables {
-			if date == ava {
+			avaAsDate := grpcDateToTime(deflatterizeDate(ava))
+			if datesAreSameDay(&date, avaAsDate) {
 				goto next
 			}
 		}
@@ -194,21 +205,30 @@ func (s *authOnlyService) isBookingValid(book *grpc_gen.Booking) bool {
 	return true
 }
 
-func dateIntervalToFlatSlice(interval *grpc_gen.DateInterval) []int32 {
-	dates := make([]int32, 0)
-	start := time.Date(int(interval.StartDate.Year), time.Month(interval.StartDate.Month), int(interval.StartDate.Day), 0, 0, 0, 0, time.Local)
-	end := time.Date(int(interval.EndDate.Year), time.Month(interval.EndDate.Month), int(interval.EndDate.Day), 0, 0, 0, 0, time.Local)
-	for date := start; date.Before(end) || date.Equal(end); date = date.Add(time.Hour * 24) {
-		dates = append(dates, flatterizeDate(&grpc_gen.Date{Day: uint32(date.Day()), Month: uint32(date.Month()), Year: uint32(date.Year())}))
+func datesAreSameDay(d1 *time.Time, d2 *time.Time) bool {
+	return d1.Day() == d2.Day() && d1.Month() == d2.Month() && d1.Year() == d2.Year()
+}
+
+func dateIntervalToDateSlice(interval *grpc_gen.DateInterval) []time.Time {
+	dates := make([]time.Time, 0)
+	start := grpcDateToTime(interval.StartDate)
+	end := grpcDateToTime(interval.EndDate)
+	for date := start; date.Before(*end) || date.Equal(*end); *date = (*date).Add(time.Hour * 24) {
+		dates = append(dates, *date)
+	}
+	return dates
+}
+
+func dateSliceToFlatSlice(dateSlice []time.Time) []int32 {
+	dates := make([]int32, 0, len(dateSlice))
+	for _, elm := range dateSlice {
+		dates = append(dates, flatterizeDate(timeToGrpcDate(&elm)))
 	}
 	return dates
 }
 
 func isDateIntervalValid(interval *grpc_gen.DateInterval) bool {
-	toDate := func(d *grpc_gen.Date) time.Time {
-		return time.Date(int(d.Year), time.Month(d.Month), int(d.Day), 0, 0, 0, 0, time.Local)
-	}
-	return !toDate(interval.StartDate).After(toDate(interval.EndDate))
+	return !grpcDateToTime(interval.StartDate).After(*grpcDateToTime(interval.EndDate))
 }
 
 func (s *authOnlyService) doesBedIdExist(bedId *grpc_gen.BedId) bool {
@@ -258,17 +278,15 @@ func isImageValid(image []byte) bool {
 
 // If is a past date, returns -1
 func numDaysUntil(date *grpc_gen.Date) int {
-	toDate := func(d *grpc_gen.Date) time.Time {
-		return time.Date(int(d.Year), time.Month(d.Month), int(d.Day), 0, 0, 0, 0, time.Local)
-	}
+	grpcDateAsDate := grpcDateToTime(date)
 
 	tmp := time.Now()
-	now := toDate(&grpc_gen.Date{Day: uint32(tmp.Day()), Month: uint32(tmp.Month()), Year: uint32(tmp.Year())})
+	now := *grpcDateToTime(&grpc_gen.Date{Day: uint32(tmp.Day()), Month: uint32(tmp.Month()), Year: uint32(tmp.Year())})
 
-	if tmp.Before(now) {
+	if grpcDateAsDate.Before(now) {
 		return -1
 	}
-	return int(toDate(date).Sub(now).Hours()) / 24
+	return int(grpcDateToTime(date).Sub(now).Hours()) / 24
 }
 
 func (s *authOnlyService) adjustAverageEvaluation(bedId string) {
