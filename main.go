@@ -79,7 +79,7 @@ func runGrpc() error {
 	scheduler := gocron.NewScheduler(time.Local)
 	scheduler.Every(1).Day().Do(func() {
 		now := time.Now()
-		todayFlat := flatterizeDate(&grpc_gen.Date{Day: uint32(now.Day()), Month: uint32(now.Month()), Year: uint32(now.Year())})
+		todayFlat := flatterizeDate(timeToGrpcDate(&now))
 		update := bson.M{"$pull": bson.M{"dateAvailables": bson.M{"$lte": todayFlat}}}
 		db.Collection("beds").UpdateMany(context.Background(), bson.D{}, update)
 	})
